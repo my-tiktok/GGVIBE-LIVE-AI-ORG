@@ -3,13 +3,23 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 5000 -H 0.0.0.0",
     "build": "next build",
-    "start": "next start"
+    "start": "next start -p 5000 -H 0.0.0.0"
   },
   "dependencies": {
-    "next": "latest",
-    "react": "latest",
-    "react-dom": "latest"
+    "next": "15.1.4",
+    "next-auth": "4.24.11",
+    "react": "19.0.0",
+    "react-dom": "19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "20.17.12",
+    "@types/react": "19.0.3",
+    "@types/react-dom": "19.0.2",
+    "typescript": "5.7.3"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }
