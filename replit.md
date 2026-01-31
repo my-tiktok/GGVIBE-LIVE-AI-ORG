@@ -1,7 +1,7 @@
 # GGVIBE LIVE AI
 
 ## Overview
-GGVIBE LIVE AI is an AI-powered chat assistant built with Next.js 16 (App Router), NextAuth, Firebase, and Google OAuth. The application is deployed on Replit.
+GGVIBE LIVE AI is an AI-powered chat assistant built with Next.js 15 (App Router), NextAuth, and Google OAuth. The application is deployed on Replit.
 
 **Domain**: https://ggvibe-chatgpt-ai.com
 **App Directory**: /ggvibe
@@ -12,40 +12,45 @@ ggvibe/
 ├── app/                    # Next.js App Router
 │   ├── layout.tsx          # Root layout
 │   ├── page.tsx            # Public landing page
+│   ├── sitemap.ts          # Dynamic sitemap
 │   ├── privacy/page.tsx    # Privacy policy
 │   ├── terms/page.tsx      # Terms of service
 │   └── api/auth/[...nextauth]/route.ts  # NextAuth API
-├── components/             # React components (future)
-├── server/                 # Fastify backend (legacy)
+├── public/                 # Static assets
+│   └── robots.txt          # SEO robots file
 ├── package.json            # Dependencies
 ├── next.config.mjs         # Next.js configuration
 └── tsconfig.json           # TypeScript configuration
 ```
 
 ## Key Technical Decisions
-- **Router**: App Router ONLY (no Pages Router)
+- **Framework**: Next.js 15.1.4 (App Router only)
 - **Runtime**: Node.js (not Edge) for NextAuth compatibility
 - **Port**: 5000 (bound to 0.0.0.0)
-- **Output**: Standalone build for Replit deployment
+- **Platform**: Replit (NOT Vercel)
 
 ## Running the Project
 ```bash
 cd ggvibe
-npm install
+npm ci        # Clean install from lockfile
 npm run dev   # Development
 npm run build # Production build
 npm run start # Production server
 ```
 
-## Recent Changes
-- 2026-01-30: Converted from Pages Router to App Router
-- 2026-01-30: Created public landing page with GGVIBE LIVE AI branding
-- 2026-01-30: Added /privacy and /terms pages
-- 2026-01-30: Set up NextAuth with Node.js runtime
-- 2026-01-30: Removed all Vercel-specific configuration
+## Build Commands
+- `npm run dev`: Development server on port 5000
+- `npm run build`: Production build
+- `npm run start`: Production server on port 5000
+
+## Static Files
+Place verification files (Google Search Console, etc.) in `ggvibe/public/`:
+- Example: `ggvibe/public/google123abc.html`
+- Accessible at: `https://ggvibe-chatgpt-ai.com/google123abc.html`
 
 ## Environment Variables Required
-- `NEXTAUTH_URL`: Full URL of the app
+These are set as Replit Secrets:
+- `NEXTAUTH_URL`: https://ggvibe-chatgpt-ai.com
 - `NEXTAUTH_SECRET`: Random secret for NextAuth
 - `GOOGLE_CLIENT_ID`: Google OAuth client ID
 - `GOOGLE_CLIENT_SECRET`: Google OAuth client secret
@@ -55,3 +60,12 @@ npm run start # Production server
 - Deployment target: Replit ONLY (no Vercel)
 - Node.js version: 20 LTS
 - Package manager: npm
+
+## Recent Changes
+- 2026-01-31: Production audit and cleanup
+- 2026-01-31: Fixed dependency versions (Next.js 15.1.4)
+- 2026-01-31: Removed output:'standalone' (not needed for Replit)
+- 2026-01-31: Added /public directory with robots.txt
+- 2026-01-31: Added dynamic sitemap
+- 2026-01-31: Removed legacy server/ and components/ directories
+- 2026-01-31: Cleaned up local .env file (use Replit Secrets)
