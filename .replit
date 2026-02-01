@@ -18,19 +18,19 @@ args = "GGVIBE Web"
 name = "GGVIBE Web"
 author = "agent"
 
+[workflows.workflow.metadata]
+outputType = "webview"
+
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "cd ggvibe && npm run dev"
 waitForPort = 5000
-
-[workflows.workflow.metadata]
-outputType = "webview"
 
 [[ports]]
 localPort = 5000
 externalPort = 80
 
 [deployment]
-build = ["sh", "-c", "npm install && npm run build"]
-run = ["sh", "-c", "npm run start"]
-deploymentTarget = "cloudrun"
+build = ["sh", "-c", "cd ggvibe && npm install && npm run build"]
+run = ["sh", "-c", "cd ggvibe && npm run start"]
+deploymentTarget = "autoscale"
