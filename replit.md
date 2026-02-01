@@ -17,7 +17,8 @@ ggvibe/
 │   ├── terms/page.tsx      # Terms of service
 │   └── api/auth/[...nextauth]/route.ts  # NextAuth API
 ├── public/                 # Static assets
-│   └── robots.txt          # SEO robots file
+│   ├── robots.txt          # SEO robots file
+│   └── google9f42a96e5d7ac88a.html  # Google Search Console verification
 ├── package.json            # Dependencies
 ├── next.config.mjs         # Next.js configuration
 └── tsconfig.json           # TypeScript configuration
@@ -26,8 +27,9 @@ ggvibe/
 ## Key Technical Decisions
 - **Framework**: Next.js 15.5.11 (App Router only)
 - **Runtime**: Node.js (not Edge) for NextAuth compatibility
-- **Port**: 5000 (bound to 0.0.0.0)
+- **Port**: ${PORT:-5000} (dynamic with fallback, bound to 0.0.0.0)
 - **Platform**: Replit (NOT Vercel)
+- **Deployment**: autoscale (Replit Production Deployment)
 
 ## Running the Project
 ```bash
@@ -62,6 +64,8 @@ These are set as Replit Secrets:
 - Package manager: npm
 
 ## Recent Changes
+- 2026-02-01: Production deployment config - $PORT fallback, autoscale deployment target, allowedDevOrigins
+- 2026-02-01: Added Google Search Console verification file
 - 2026-02-01: Security update - upgraded Next.js 15.1.4 -> 15.5.11, next-auth 4.24.11 -> 4.24.13
 - 2026-01-31: Production audit and cleanup
 - 2026-01-31: Fixed dependency versions (Next.js 15.1.4)
