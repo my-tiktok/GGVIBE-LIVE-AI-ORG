@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import * as client from "openid-client";
 import memoize from "memoizee";
 import { cookies, headers } from "next/headers";
+import { getBaseUrl } from "@/lib/url/base-url";
 
 const getOidcConfig = memoize(
   async () => {
@@ -13,26 +14,11 @@ const getOidcConfig = memoize(
   { maxAge: 3600 * 1000 }
 );
 
-function getBaseUrl(request: Request, headersList: Headers): string {
-  const forwardedHost = headersList.get("x-forwarded-host");
-  const forwardedProto = headersList.get("x-forwarded-proto") || "https";
-  
-  if (forwardedHost) {
-    return `${forwardedProto}://${forwardedHost}`;
-  }
-  
-  if (process.env.NEXTAUTH_URL) {
-    return process.env.NEXTAUTH_URL;
-  }
-  
-  const url = new URL(request.url);
-  return `${url.protocol}//${url.host}`;
-}
-
 export async function GET(request: Request) {
+  const headersList = await headers();
+  const baseUrl = getBaseUrl(request, headersList);
+  
   try {
-    const headersList = await headers();
-    const baseUrl = getBaseUrl(request, headersList);
     const redirectUri = `${baseUrl}/api/callback`;
     
     const config = await getOidcConfig();
@@ -51,20 +37,20 @@ export async function GET(request: Request) {
     const cookieStore = await cookies();
     cookieStore.set("code_verifier", codeVerifier, { 
       httpOnly: true, 
-      secure: true, 
+      secure: process.env.NODE_ENV === "production", 
       sameSite: "lax",
       maxAge: 600
     });
     cookieStore.set("oauth_state", state, { 
       httpOnly: true, 
-      secure: true, 
+      secure: process.env.NODE_ENV === "production", 
       sameSite: "lax",
       maxAge: 600
     });
     
     return NextResponse.redirect(authUrl.href);
   } catch (error) {
-    console.error("Login error:", error);
-    return NextResponse.redirect(new URL("/?error=login_failed", request.url));
+    console.error("Login error:", error instanceof Error ? error.message : "Unknown error");
+    return NextResponse.redirect(`${baseUrl}/?error=login_failed`);
   }
 }

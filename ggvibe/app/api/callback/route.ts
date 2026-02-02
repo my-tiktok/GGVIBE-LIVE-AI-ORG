@@ -5,6 +5,7 @@ import { cookies, headers } from "next/headers";
 import { db } from "@/lib/db";
 import { users } from "@/lib/schema";
 import { getSession } from "@/lib/session";
+import { getBaseUrl } from "@/lib/url/base-url";
 
 const getOidcConfig = memoize(
   async () => {
@@ -16,20 +17,13 @@ const getOidcConfig = memoize(
   { maxAge: 3600 * 1000 }
 );
 
-function getBaseUrl(request: Request, headersList: Headers): string {
-  const forwardedHost = headersList.get("x-forwarded-host");
-  const forwardedProto = headersList.get("x-forwarded-proto") || "https";
-  
-  if (forwardedHost) {
-    return `${forwardedProto}://${forwardedHost}`;
-  }
-  
-  if (process.env.NEXTAUTH_URL) {
-    return process.env.NEXTAUTH_URL;
-  }
-  
-  const url = new URL(request.url);
-  return `${url.protocol}//${url.host}`;
+interface ReplitClaims {
+  sub: string;
+  email?: string;
+  first_name?: string;
+  last_name?: string;
+  profile_image_url?: string;
+  exp?: number;
 }
 
 export async function GET(request: Request) {
@@ -37,7 +31,13 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state");
+  const errorParam = url.searchParams.get("error");
   const baseUrl = getBaseUrl(request, headersList);
+  
+  if (errorParam) {
+    console.error("OAuth error from provider:", errorParam);
+    return NextResponse.redirect(`${baseUrl}/?error=provider_error`);
+  }
   
   const cookieStore = await cookies();
   const codeVerifier = cookieStore.get("code_verifier")?.value;
@@ -55,9 +55,9 @@ export async function GET(request: Request) {
       expectedState: savedState,
     });
     
-    const claims = tokens.claims();
+    const claims = tokens.claims() as ReplitClaims;
     
-    if (!claims || !claims.sub) {
+    if (!claims?.sub) {
       return NextResponse.redirect(`${baseUrl}/?error=invalid_claims`);
     }
     
@@ -65,18 +65,18 @@ export async function GET(request: Request) {
       .insert(users)
       .values({
         id: claims.sub,
-        email: claims.email as string | undefined,
-        firstName: (claims as any).first_name,
-        lastName: (claims as any).last_name,
-        profileImageUrl: (claims as any).profile_image_url,
+        email: claims.email,
+        firstName: claims.first_name,
+        lastName: claims.last_name,
+        profileImageUrl: claims.profile_image_url,
       })
       .onConflictDoUpdate({
         target: users.id,
         set: {
-          email: claims.email as string | undefined,
-          firstName: (claims as any).first_name,
-          lastName: (claims as any).last_name,
-          profileImageUrl: (claims as any).profile_image_url,
+          email: claims.email,
+          firstName: claims.first_name,
+          lastName: claims.last_name,
+          profileImageUrl: claims.profile_image_url,
           updatedAt: new Date(),
         },
       });
@@ -86,10 +86,10 @@ export async function GET(request: Request) {
     
     const session = await getSession();
     session.userId = claims.sub;
-    session.email = claims.email as string | undefined;
-    session.firstName = (claims as any).first_name;
-    session.lastName = (claims as any).last_name;
-    session.profileImageUrl = (claims as any).profile_image_url;
+    session.email = claims.email;
+    session.firstName = claims.first_name;
+    session.lastName = claims.last_name;
+    session.profileImageUrl = claims.profile_image_url;
     session.accessToken = tokens.access_token;
     session.expiresAt = claims.exp;
     session.isLoggedIn = true;
@@ -97,7 +97,8 @@ export async function GET(request: Request) {
     
     return NextResponse.redirect(baseUrl);
   } catch (error) {
-    console.error("OAuth callback error:", error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    console.error("OAuth callback error:", errorMessage);
     return NextResponse.redirect(`${baseUrl}/?error=auth_failed`);
   }
 }

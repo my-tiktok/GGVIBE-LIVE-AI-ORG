@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import * as client from "openid-client";
 import memoize from "memoizee";
+import { headers } from "next/headers";
 import { getSession } from "@/lib/session";
+import { getBaseUrl } from "@/lib/url/base-url";
 
 const getOidcConfig = memoize(
   async () => {
@@ -14,8 +16,8 @@ const getOidcConfig = memoize(
 );
 
 export async function GET(request: Request) {
-  const url = new URL(request.url);
-  const baseUrl = `${url.protocol}//${url.host}`;
+  const headersList = await headers();
+  const baseUrl = getBaseUrl(request, headersList);
   
   try {
     const session = await getSession();
@@ -28,7 +30,7 @@ export async function GET(request: Request) {
     });
     return NextResponse.redirect(logoutUrl.href);
   } catch (error) {
-    console.error("Logout error:", error);
+    console.error("Logout error:", error instanceof Error ? error.message : "Unknown error");
     return NextResponse.redirect(baseUrl);
   }
 }
