@@ -13,18 +13,36 @@ ggvibe/
 │   ├── layout.tsx          # Root layout
 │   ├── page.tsx            # Public landing page (with auth)
 │   ├── sitemap.ts          # Dynamic sitemap
+│   ├── login/page.tsx      # Login page with error handling
+│   ├── auth/success/page.tsx  # Post-login success (mobile deep-link)
 │   ├── privacy/page.tsx    # Privacy policy
 │   ├── terms/page.tsx      # Terms of service
 │   └── api/
 │       ├── login/route.ts      # Replit Auth login
 │       ├── logout/route.ts     # Replit Auth logout
 │       ├── callback/route.ts   # Replit Auth callback
-│       └── auth/user/route.ts  # Get current user
+│       ├── auth/
+│       │   ├── user/route.ts   # Get current user (legacy)
+│       │   └── health/route.ts # Health check (legacy)
+│       └── v1/                 # V1 API (frozen contract)
+│           ├── health/route.ts # Health check
+│           ├── auth/user/route.ts # Get current user
+│           └── chat/route.ts   # Chat list/create
 ├── lib/                    # Shared libraries
 │   ├── db.ts               # Database connection (Drizzle)
 │   ├── schema.ts           # Database schema (users, sessions)
 │   ├── session.ts          # Iron-session config
-│   └── auth.ts             # Auth utilities
+│   ├── env.ts              # Environment validation
+│   ├── request-id.ts       # Request ID generation
+│   └── url/base-url.ts     # Canonical URL resolution
+├── docs/                   # Documentation
+│   ├── REPLIT_DEPLOY.md    # Deployment guide
+│   ├── AUTH_SESSION_LIFECYCLE.md
+│   ├── API_VERSIONING.md   # V1 freeze policy
+│   ├── CHAT_API_CONTRACT.md
+│   └── PRODUCTION_CHECKLIST.md
+├── scripts/
+│   └── smoke-test.sh       # Production smoke test
 ├── hooks/                  # React hooks
 │   └── use-auth.ts         # Auth hook for client
 ├── public/                 # Static assets
@@ -81,6 +99,13 @@ Replit Auth is used for user authentication via OpenID Connect.
 - Package manager: npm
 
 ## Recent Changes
+- 2026-02-02: V1 API namespace - /api/v1/health, /api/v1/auth/user, /api/v1/chat with frozen contract
+- 2026-02-02: Mobile OAuth flow - /auth/success page with deep-link support (NEXT_PUBLIC_MOBILE_DEEP_LINK_SCHEME)
+- 2026-02-02: Login page - /login with error handling and user-friendly messages
+- 2026-02-02: Env validation - lib/env.ts with fail-fast for missing required vars
+- 2026-02-02: OAuth robustness - invalid_grant handled gracefully, requestId on all responses
+- 2026-02-02: Smoke test script - scripts/smoke-test.sh for production validation
+- 2026-02-02: Documentation - REPLIT_DEPLOY.md, API_VERSIONING.md, CHAT_API_CONTRACT.md
 - 2026-02-02: Production hardening - added lib/http/result.ts for type-safe HTTP responses
 - 2026-02-02: Production hardening - added lib/url/base-url.ts for centralized URL resolution
 - 2026-02-02: Production hardening - added /api/auth/health endpoint

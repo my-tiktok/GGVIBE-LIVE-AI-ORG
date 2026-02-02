@@ -1,5 +1,6 @@
 import { getIronSession, SessionOptions } from "iron-session";
 import { cookies } from "next/headers";
+import { isProduction } from "@/lib/env";
 
 export interface SessionData {
   userId?: string;
@@ -12,13 +13,25 @@ export interface SessionData {
   isLoggedIn: boolean;
 }
 
+function getSessionSecret(): string {
+  const secret = process.env.SESSION_SECRET || process.env.NEXTAUTH_SECRET;
+  if (!secret) {
+    throw new Error("SESSION_SECRET or NEXTAUTH_SECRET is required");
+  }
+  if (secret.length < 32) {
+    throw new Error("SESSION_SECRET must be at least 32 characters");
+  }
+  return secret;
+}
+
 export const sessionOptions: SessionOptions = {
-  password: process.env.SESSION_SECRET || process.env.NEXTAUTH_SECRET!,
+  password: getSessionSecret(),
   cookieName: "ggvibe_session",
   cookieOptions: {
-    secure: process.env.NODE_ENV === "production",
+    secure: isProduction(),
     httpOnly: true,
     sameSite: "lax" as const,
+    path: "/",
     maxAge: 7 * 24 * 60 * 60,
   },
 };
