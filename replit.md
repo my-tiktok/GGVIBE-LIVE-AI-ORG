@@ -11,11 +11,22 @@ GGVIBE LIVE AI is an AI-powered chat assistant built with Next.js 15 (App Router
 ggvibe/
 ├── app/                    # Next.js App Router
 │   ├── layout.tsx          # Root layout
-│   ├── page.tsx            # Public landing page
+│   ├── page.tsx            # Public landing page (with auth)
 │   ├── sitemap.ts          # Dynamic sitemap
 │   ├── privacy/page.tsx    # Privacy policy
 │   ├── terms/page.tsx      # Terms of service
-│   └── api/auth/[...nextauth]/route.ts  # NextAuth API
+│   └── api/
+│       ├── login/route.ts      # Replit Auth login
+│       ├── logout/route.ts     # Replit Auth logout
+│       ├── callback/route.ts   # Replit Auth callback
+│       └── auth/user/route.ts  # Get current user
+├── lib/                    # Shared libraries
+│   ├── db.ts               # Database connection (Drizzle)
+│   ├── schema.ts           # Database schema (users, sessions)
+│   ├── session.ts          # Iron-session config
+│   └── auth.ts             # Auth utilities
+├── hooks/                  # React hooks
+│   └── use-auth.ts         # Auth hook for client
 ├── public/                 # Static assets
 │   ├── robots.txt          # SEO robots file
 │   └── google9f42a96e5d7ac88a.html  # Google Search Console verification
@@ -26,7 +37,8 @@ ggvibe/
 
 ## Key Technical Decisions
 - **Framework**: Next.js 15.5.11 (App Router only)
-- **Runtime**: Node.js (not Edge) for NextAuth compatibility
+- **Authentication**: Replit Auth (OpenID Connect) with iron-session
+- **Database**: PostgreSQL with Drizzle ORM
 - **Port**: ${PORT:-5000} (dynamic with fallback, bound to 0.0.0.0)
 - **Platform**: Replit (NOT Vercel)
 - **Deployment**: autoscale (Replit Production Deployment)
@@ -52,11 +64,16 @@ Place verification files (Google Search Console, etc.) in `ggvibe/public/`:
 
 ## Environment Variables Required
 These are set as Replit Secrets:
-- `NEXTAUTH_URL`: https://ggvibe-chatgpt-ai.com
-- `NEXTAUTH_SECRET`: Random secret for NextAuth
-- `GOOGLE_CLIENT_ID`: Google OAuth client ID
-- `GOOGLE_CLIENT_SECRET`: Google OAuth client secret
+- `SESSION_SECRET` or `NEXTAUTH_SECRET`: Random secret for session encryption (auto-provided)
+- `DATABASE_URL`: PostgreSQL connection string (auto-provided)
+- `REPL_ID`: Replit project ID (auto-provided)
 - `OPENAI_API_KEY`: OpenAI API key for chat
+
+## Authentication
+Replit Auth is used for user authentication via OpenID Connect.
+- Login: `/api/login` - Redirects to Replit for authentication
+- Logout: `/api/logout` - Clears session and logs out
+- User API: `/api/auth/user` - Returns current authenticated user
 
 ## User Preferences
 - Deployment target: Replit ONLY (no Vercel)
@@ -64,6 +81,8 @@ These are set as Replit Secrets:
 - Package manager: npm
 
 ## Recent Changes
+- 2026-02-02: Added Replit Auth with iron-session for secure authentication
+- 2026-02-02: Added PostgreSQL database with Drizzle ORM for users/sessions
 - 2026-02-01: Production deployment config - $PORT fallback, autoscale deployment target, allowedDevOrigins
 - 2026-02-01: Added Google Search Console verification file
 - 2026-02-01: Security update - upgraded Next.js 15.1.4 -> 15.5.11, next-auth 4.24.11 -> 4.24.13

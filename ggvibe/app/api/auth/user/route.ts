@@ -1,33 +1,27 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import { users } from "@/lib/schema";
 import { eq } from "drizzle-orm";
+import { getSession } from "@/lib/session";
 
 export async function GET() {
-  const cookieStore = await cookies();
-  const sessionCookie = cookieStore.get("session")?.value;
-  
-  if (!sessionCookie) {
-    return NextResponse.json(null, { status: 401 });
-  }
-  
   try {
-    const session = JSON.parse(sessionCookie);
+    const session = await getSession();
     
-    if (!session.userId) {
+    if (!session.isLoggedIn || !session.userId) {
       return NextResponse.json(null, { status: 401 });
     }
     
     const now = Math.floor(Date.now() / 1000);
     if (session.expiresAt && now > session.expiresAt) {
-      cookieStore.delete("session");
+      session.destroy();
       return NextResponse.json(null, { status: 401 });
     }
     
     const [user] = await db.select().from(users).where(eq(users.id, session.userId));
     
     if (!user) {
+      session.destroy();
       return NextResponse.json(null, { status: 401 });
     }
     

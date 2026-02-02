@@ -12,6 +12,7 @@
     "connect-pg-simple": "^10.0.0",
     "drizzle-orm": "^0.45.1",
     "express-session": "^1.19.0",
+    "iron-session": "^8.0.4",
     "memoizee": "^0.4.17",
     "next": "15.5.11",
     "next-auth": "4.24.13",
