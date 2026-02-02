@@ -99,6 +99,12 @@ Replit Auth is used for user authentication via OpenID Connect.
 - Package manager: npm
 
 ## Recent Changes
+- 2026-02-02: INCIDENT FIX - Canonical host enforcement for OAuth to fix login persistence
+- 2026-02-02: INCIDENT FIX - Host-only cookies (no Domain attr) to prevent cross-domain issues
+- 2026-02-02: INCIDENT FIX - SESSION_COOKIE_DOMAIN warning if set, recommend deletion
+- 2026-02-02: INCIDENT FIX - Frontend auth hook uses cache: no-store
+- 2026-02-02: INCIDENT FIX - /api/auth/user returns authenticated:true/false flag
+- 2026-02-02: Added REPLIT_DEPLOY_RUNBOOK.md with exact secrets and verification steps
 - 2026-02-02: V1 API namespace - /api/v1/health, /api/v1/auth/user, /api/v1/chat with frozen contract
 - 2026-02-02: Mobile OAuth flow - /auth/success page with deep-link support (NEXT_PUBLIC_MOBILE_DEEP_LINK_SCHEME)
 - 2026-02-02: Login page - /login with error handling and user-friendly messages
