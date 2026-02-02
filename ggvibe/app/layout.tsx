@@ -3,6 +3,18 @@ import type { Metadata } from 'next'
 export const metadata: Metadata = {
   title: 'GGVIBE LIVE AI - Your AI-Powered Chat Assistant',
   description: 'Experience the next generation of AI-powered conversations with GGVIBE LIVE AI. Chat, create, and collaborate with intelligent AI assistance.',
+  metadataBase: new URL('https://ggvibe-chatgpt-ai.org'),
+  alternates: {
+    canonical: '/',
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    url: 'https://ggvibe-chatgpt-ai.org',
+    siteName: 'GGVIBE LIVE AI',
+    title: 'GGVIBE LIVE AI - Your AI-Powered Chat Assistant',
+    description: 'Experience the next generation of AI-powered conversations with GGVIBE LIVE AI.',
+  },
 }
 
 export default function RootLayout({
