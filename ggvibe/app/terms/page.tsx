@@ -31,7 +31,7 @@ export default function TermsPage() {
 
           <h2 style={{ color: '#00d4ff', marginTop: '32px' }}>3. User Accounts</h2>
           <p>
-            To access certain features, you must sign in using Replit authentication. You are responsible
+            To access certain features, you must sign in using Google OAuth. You are responsible
             for maintaining the security of your account and all activities under your account.
           </p>
 

@@ -29,7 +29,6 @@ const buildAllowedDevOrigins = () => {
 
 const nextConfig = {
   reactStrictMode: true,
-  poweredByHeader: false,
   outputFileTracingRoot: join(__dirname, '..'),
   allowedDevOrigins: buildAllowedDevOrigins(),
   async headers() {
@@ -40,18 +39,6 @@ const nextConfig = {
           {
             key: 'Cache-Control',
             value: 'no-cache, no-store, must-revalidate',
-          },
-          {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
-          },
-          {
-            key: 'X-Frame-Options',
-            value: 'SAMEORIGIN',
-          },
-          {
-            key: 'Referrer-Policy',
-            value: 'strict-origin-when-cross-origin',
           },
         ],
       },
