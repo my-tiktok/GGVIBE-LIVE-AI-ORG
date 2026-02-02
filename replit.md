@@ -81,6 +81,12 @@ Replit Auth is used for user authentication via OpenID Connect.
 - Package manager: npm
 
 ## Recent Changes
+- 2026-02-02: Production hardening - added lib/http/result.ts for type-safe HTTP responses
+- 2026-02-02: Production hardening - added lib/url/base-url.ts for centralized URL resolution
+- 2026-02-02: Production hardening - added /api/auth/health endpoint
+- 2026-02-02: Production hardening - removed all `as any` casts from callback route
+- 2026-02-02: Production hardening - added requestId to all API responses
+- 2026-02-02: Production hardening - added docs/ with PRODUCTION_CHECKLIST.md, AUTH_SESSION_LIFECYCLE.md, V1_ROADMAP.md
 - 2026-02-02: Removed root package.json/lockfile to eliminate multi-lockfile warning
 - 2026-02-02: Added outputFileTracingRoot to next.config.mjs for proper workspace detection
 - 2026-02-02: Updated deployment to use npm ci for deterministic builds
