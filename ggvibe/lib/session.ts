@@ -24,6 +24,19 @@ function getSessionSecret(): string {
   return secret;
 }
 
+function getCookieDomain(): string | undefined {
+  const domain = process.env.SESSION_COOKIE_DOMAIN;
+  if (domain) {
+    console.warn(
+      `[SESSION] SESSION_COOKIE_DOMAIN is set to "${domain}". ` +
+      `This will scope cookies to that domain. ` +
+      `Remove this env var for host-only cookies (recommended).`
+    );
+    return domain;
+  }
+  return undefined;
+}
+
 export const sessionOptions: SessionOptions = {
   password: getSessionSecret(),
   cookieName: "ggvibe_session",
@@ -33,6 +46,7 @@ export const sessionOptions: SessionOptions = {
     sameSite: "lax" as const,
     path: "/",
     maxAge: 7 * 24 * 60 * 60,
+    domain: getCookieDomain(),
   },
 };
 

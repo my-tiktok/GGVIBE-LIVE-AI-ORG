@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import * as client from "openid-client";
 import memoize from "memoizee";
-import { cookies, headers } from "next/headers";
+import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import { users } from "@/lib/schema";
 import { getSession } from "@/lib/session";
-import { getBaseUrl } from "@/lib/url/base-url";
+import { getCanonicalUrl, getCallbackUrl } from "@/lib/url/base-url";
 import { generateRequestId } from "@/lib/request-id";
+import { isProduction } from "@/lib/env";
 
 const getOidcConfig = memoize(
   async () => {
@@ -35,19 +36,27 @@ function safeRedirect(url: string, requestId: string): NextResponse {
 
 export async function GET(request: Request) {
   const requestId = generateRequestId();
-  const headersList = await headers();
+  const canonicalUrl = getCanonicalUrl();
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state");
   const errorParam = url.searchParams.get("error");
   const errorDescription = url.searchParams.get("error_description");
-  const baseUrl = getBaseUrl(request, headersList);
+
+  const requestHost = url.host;
+  const canonicalHost = new URL(canonicalUrl).host;
+
+  if (isProduction() && requestHost !== canonicalHost) {
+    console.log(`[${requestId}] Callback on non-canonical host: ${requestHost}. Preserving params and redirecting.`);
+    const canonicalCallback = `${canonicalUrl}/api/callback${url.search}`;
+    return safeRedirect(canonicalCallback, requestId);
+  }
 
   if (errorParam) {
     console.error(`[${requestId}] OAuth provider error: ${errorParam}`, {
       description: errorDescription,
     });
-    return safeRedirect(`${baseUrl}/login?error=provider_error`, requestId);
+    return safeRedirect(`${canonicalUrl}/login?error=provider_error`, requestId);
   }
 
   const cookieStore = await cookies();
@@ -56,23 +65,27 @@ export async function GET(request: Request) {
 
   if (!code) {
     console.error(`[${requestId}] Missing authorization code`);
-    return safeRedirect(`${baseUrl}/login?error=invalid_callback`, requestId);
+    return safeRedirect(`${canonicalUrl}/login?error=invalid_callback`, requestId);
   }
 
   if (!codeVerifier) {
-    console.error(`[${requestId}] Missing code_verifier cookie`);
-    return safeRedirect(`${baseUrl}/login?error=invalid_callback`, requestId);
+    console.error(`[${requestId}] Missing code_verifier cookie - this usually means cookies were set on a different domain`);
+    return safeRedirect(`${canonicalUrl}/login?error=invalid_callback`, requestId);
   }
 
   if (!state || state !== savedState) {
-    console.error(`[${requestId}] State mismatch`);
-    return safeRedirect(`${baseUrl}/login?error=invalid_callback`, requestId);
+    console.error(`[${requestId}] State mismatch - expected: ${savedState?.slice(0,8)}..., got: ${state?.slice(0,8)}...`);
+    return safeRedirect(`${canonicalUrl}/login?error=invalid_callback`, requestId);
   }
 
   try {
     const config = await getOidcConfig();
+    const expectedRedirectUri = getCallbackUrl();
 
-    const tokens = await client.authorizationCodeGrant(config, url, {
+    const callbackUrl = new URL(expectedRedirectUri);
+    callbackUrl.search = url.search;
+
+    const tokens = await client.authorizationCodeGrant(config, callbackUrl, {
       pkceCodeVerifier: codeVerifier,
       expectedState: savedState,
     });
@@ -81,7 +94,7 @@ export async function GET(request: Request) {
 
     if (!claims?.sub) {
       console.error(`[${requestId}] Invalid claims: missing sub`);
-      return safeRedirect(`${baseUrl}/login?error=invalid_claims`, requestId);
+      return safeRedirect(`${canonicalUrl}/login?error=invalid_claims`, requestId);
     }
 
     await db
@@ -119,7 +132,7 @@ export async function GET(request: Request) {
     await session.save();
 
     console.log(`[${requestId}] OAuth success for user: ${claims.sub}`);
-    return safeRedirect(`${baseUrl}/auth/success`, requestId);
+    return safeRedirect(`${canonicalUrl}/auth/success`, requestId);
   } catch (error) {
     const isInvalidGrant =
       error instanceof Error &&
@@ -129,13 +142,13 @@ export async function GET(request: Request) {
 
     if (isInvalidGrant) {
       console.error(`[${requestId}] Invalid grant error`);
-      return safeRedirect(`${baseUrl}/login?error=invalid_callback`, requestId);
+      return safeRedirect(`${canonicalUrl}/login?error=invalid_callback`, requestId);
     }
 
     console.error(`[${requestId}] OAuth callback error:`, {
       type: error instanceof Error ? error.constructor.name : "Unknown",
       message: error instanceof Error ? error.message : "Unknown error",
     });
-    return safeRedirect(`${baseUrl}/login?error=auth_failed`, requestId);
+    return safeRedirect(`${canonicalUrl}/login?error=auth_failed`, requestId);
   }
 }

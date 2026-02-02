@@ -16,6 +16,7 @@ export async function GET() {
     if (!session.isLoggedIn) {
       return NextResponse.json(
         {
+          authenticated: false,
           error: "unauthorized",
           message: "Not authenticated",
           requestId,
@@ -26,6 +27,7 @@ export async function GET() {
 
     return NextResponse.json(
       {
+        authenticated: true,
         user: {
           id: session.userId,
           email: session.email,

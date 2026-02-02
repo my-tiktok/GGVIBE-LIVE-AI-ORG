@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import * as client from "openid-client";
 import memoize from "memoizee";
-import { cookies, headers } from "next/headers";
-import { getBaseUrl } from "@/lib/url/base-url";
+import { cookies } from "next/headers";
+import { getCanonicalUrl, getCallbackUrl } from "@/lib/url/base-url";
 import { generateRequestId } from "@/lib/request-id";
 import { isProduction } from "@/lib/env";
 
@@ -18,12 +18,20 @@ const getOidcConfig = memoize(
 
 export async function GET(request: Request) {
   const requestId = generateRequestId();
-  const headersList = await headers();
-  const baseUrl = getBaseUrl(request, headersList);
+  const canonicalUrl = getCanonicalUrl();
+  const redirectUri = getCallbackUrl();
+
+  const requestHost = new URL(request.url).host;
+  const canonicalHost = new URL(canonicalUrl).host;
+
+  if (isProduction() && requestHost !== canonicalHost) {
+    console.log(`[${requestId}] Redirecting to canonical host for login: ${requestHost} -> ${canonicalHost}`);
+    const response = NextResponse.redirect(`${canonicalUrl}/api/login`);
+    response.headers.set("X-Request-Id", requestId);
+    return response;
+  }
 
   try {
-    const redirectUri = `${baseUrl}/api/callback`;
-
     const config = await getOidcConfig();
     const codeVerifier = client.randomPKCECodeVerifier();
     const codeChallenge = await client.calculatePKCECodeChallenge(codeVerifier);
@@ -58,7 +66,7 @@ export async function GET(request: Request) {
     console.error(`[${requestId}] Login error:`, {
       message: error instanceof Error ? error.message : "Unknown error",
     });
-    const response = NextResponse.redirect(`${baseUrl}/login?error=login_failed`);
+    const response = NextResponse.redirect(`${canonicalUrl}/login?error=login_failed`);
     response.headers.set("X-Request-Id", requestId);
     return response;
   }

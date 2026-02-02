@@ -11,6 +11,11 @@ export function useAuth() {
     try {
       const response = await fetch("/api/auth/user", {
         credentials: "include",
+        cache: "no-store",
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          "Pragma": "no-cache",
+        },
       });
 
       if (response.status === 401) {
@@ -22,8 +27,12 @@ export function useAuth() {
         throw new Error(`${response.status}: ${response.statusText}`);
       }
 
-      const userData = await response.json();
-      setUser(userData);
+      const data = await response.json();
+      if (data.user) {
+        setUser(data.user);
+      } else {
+        setUser(data);
+      }
     } catch (error) {
       console.error("Error fetching user:", error);
       setUser(null);

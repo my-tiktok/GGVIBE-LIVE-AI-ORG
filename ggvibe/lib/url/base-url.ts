@@ -1,5 +1,11 @@
 import { isProduction } from "@/lib/env";
 
+const CANONICAL_URL = "https://ggvibe-chatgpt-ai.org";
+
+export function getCanonicalUrl(): string {
+  return process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") || CANONICAL_URL;
+}
+
 export function getBaseUrl(request?: Request, headersList?: Headers): string {
   if (process.env.NEXT_PUBLIC_APP_URL) {
     return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
@@ -33,9 +39,16 @@ export function getBaseUrl(request?: Request, headersList?: Headers): string {
 }
 
 export function getCallbackUrl(request?: Request, headersList?: Headers): string {
-  return `${getBaseUrl(request, headersList)}/api/callback`;
+  return `${getCanonicalUrl()}/api/callback`;
 }
 
-export function getCanonicalUrl(): string {
-  return process.env.NEXT_PUBLIC_APP_URL || "https://ggvibe-chatgpt-ai.org";
+export function isCanonicalHost(request: Request): boolean {
+  const canonical = getCanonicalUrl();
+  const canonicalHost = new URL(canonical).host;
+  const requestHost = new URL(request.url).host;
+  return requestHost === canonicalHost;
+}
+
+export function getCanonicalRedirect(path: string): string {
+  return `${getCanonicalUrl()}${path}`;
 }
