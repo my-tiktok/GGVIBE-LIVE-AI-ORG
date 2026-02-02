@@ -1,7 +1,7 @@
 # GGVIBE LIVE AI
 
 ## Overview
-GGVIBE LIVE AI is an AI-powered chat assistant built with Next.js 15 (App Router), NextAuth, and Google OAuth. The application is deployed on Replit.
+GGVIBE LIVE AI is an AI-powered chat assistant built with Next.js 15 (App Router) and Replit Auth. The application is deployed on Replit.
 
 **Domain**: https://ggvibe-chatgpt-ai.com
 **App Directory**: /ggvibe
