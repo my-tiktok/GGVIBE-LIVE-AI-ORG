@@ -1,6 +1,7 @@
-modules = ["nodejs-20"]
+modules = ["nodejs-20", "postgresql-16"]
 [agent]
 expertMode = true
+integrations = ["javascript_log_in_with_replit:2.0.0"]
 
 [workflows]
 runButton = "Project"
@@ -34,3 +35,6 @@ externalPort = 80
 build = ["sh", "-c", "cd ggvibe && npm install && npm run build"]
 run = ["sh", "-c", "cd ggvibe && npm run start"]
 deploymentTarget = "autoscale"
+
+[nix]
+channel = "stable-25_05"
