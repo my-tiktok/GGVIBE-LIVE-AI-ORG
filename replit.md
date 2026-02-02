@@ -81,6 +81,10 @@ Replit Auth is used for user authentication via OpenID Connect.
 - Package manager: npm
 
 ## Recent Changes
+- 2026-02-02: Removed root package.json/lockfile to eliminate multi-lockfile warning
+- 2026-02-02: Added outputFileTracingRoot to next.config.mjs for proper workspace detection
+- 2026-02-02: Updated deployment to use npm ci for deterministic builds
+- 2026-02-02: Added replit.app domain to production allowedDevOrigins
 - 2026-02-02: Production hardening - fixed OAuth baseUrl detection using x-forwarded headers
 - 2026-02-02: SEO hardening - canonical URLs, sitemap, robots.txt all point to .org domain
 - 2026-02-02: Security update - allowedDevOrigins now environment-aware (no wildcards in prod)

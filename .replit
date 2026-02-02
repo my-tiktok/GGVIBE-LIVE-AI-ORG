@@ -32,7 +32,7 @@ localPort = 5000
 externalPort = 80
 
 [deployment]
-build = ["sh", "-c", "cd ggvibe && npm install && npm run build"]
+build = ["sh", "-c", "cd ggvibe && npm ci && npm run build"]
 run = ["sh", "-c", "cd ggvibe && npm run start"]
 deploymentTarget = "autoscale"
 

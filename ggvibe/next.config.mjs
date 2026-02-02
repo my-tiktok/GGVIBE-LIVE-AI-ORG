@@ -1,4 +1,8 @@
 /** @type {import('next').NextConfig} */
+import { dirname, join } from 'path'
+import { fileURLToPath } from 'url'
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
 
 const buildAllowedDevOrigins = () => {
   const origins = []
@@ -7,7 +11,8 @@ const buildAllowedDevOrigins = () => {
   if (isProduction) {
     origins.push(
       'https://ggvibe-chatgpt-ai.org',
-      'https://www.ggvibe-chatgpt-ai.org'
+      'https://www.ggvibe-chatgpt-ai.org',
+      'https://ggvibe-live-ai-1.replit.app'
     )
   } else {
     origins.push('http://localhost:5000', 'http://127.0.0.1:5000')
@@ -19,15 +24,12 @@ const buildAllowedDevOrigins = () => {
     }
   }
 
-  if (process.env.NEXT_PUBLIC_SITE_URL) {
-    origins.push(process.env.NEXT_PUBLIC_SITE_URL)
-  }
-
   return origins
 }
 
 const nextConfig = {
   reactStrictMode: true,
+  outputFileTracingRoot: join(__dirname, '..'),
   allowedDevOrigins: buildAllowedDevOrigins(),
   async headers() {
     return [
