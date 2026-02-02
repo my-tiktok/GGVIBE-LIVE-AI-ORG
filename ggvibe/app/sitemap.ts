@@ -1,28 +1,26 @@
-// app/sitemap.ts
-import { MetadataRoute } from "next";
+import { MetadataRoute } from 'next'
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = "https://ggvibe-chatgpt-ai.org";
-  const now = new Date();
+  const baseUrl = 'https://ggvibe-chatgpt-ai.com'
 
   return [
     {
-      url: `${baseUrl}/`,
-      lastModified: now,
-      changeFrequency: "weekly",
+      url: baseUrl,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
       priority: 1,
     },
     {
       url: `${baseUrl}/privacy`,
-      lastModified: now,
-      changeFrequency: "monthly",
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
       priority: 0.5,
     },
     {
       url: `${baseUrl}/terms`,
-      lastModified: now,
-      changeFrequency: "monthly",
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
       priority: 0.5,
     },
-  ];
+  ]
 }
