@@ -21,15 +21,14 @@ export default function PrivacyPage() {
             GGVIBE LIVE AI collects information you provide directly when using our service, including:
           </p>
           <ul>
-            <li>Account information (email, name) when you sign in via Google OAuth</li>
-            <li>Chat conversations and queries submitted to the AI assistant</li>
+            <li>Account information (email, name) when you sign in via Replit authentication</li>
             <li>Usage data and analytics to improve our service</li>
           </ul>
 
           <h2 style={{ color: '#00d4ff', marginTop: '32px' }}>2. How We Use Your Information</h2>
           <p>We use collected information to:</p>
           <ul>
-            <li>Provide and maintain the AI chat service</li>
+            <li>Provide and maintain our services</li>
             <li>Improve and personalize your experience</li>
             <li>Communicate with you about service updates</li>
             <li>Ensure security and prevent abuse</li>
@@ -38,19 +37,19 @@ export default function PrivacyPage() {
           <h2 style={{ color: '#00d4ff', marginTop: '32px' }}>3. Data Security</h2>
           <p>
             We implement industry-standard security measures to protect your data.
-            Your conversations are encrypted in transit and at rest.
+            All data is encrypted in transit using HTTPS.
           </p>
 
           <h2 style={{ color: '#00d4ff', marginTop: '32px' }}>4. Third-Party Services</h2>
           <p>
-            We use Google OAuth for authentication and OpenAI for AI processing.
+            We use Replit for authentication.
             These services have their own privacy policies that govern their use of your data.
           </p>
 
           <h2 style={{ color: '#00d4ff', marginTop: '32px' }}>5. Your Rights</h2>
           <p>
             You may request access to, correction of, or deletion of your personal data
-            by contacting us. You can also disconnect your Google account at any time.
+            by contacting us. You can also disconnect your Replit account at any time.
           </p>
 
           <h2 style={{ color: '#00d4ff', marginTop: '32px' }}>6. Contact Us</h2>

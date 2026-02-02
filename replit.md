@@ -81,6 +81,10 @@ Replit Auth is used for user authentication via OpenID Connect.
 - Package manager: npm
 
 ## Recent Changes
+- 2026-02-02: Production audit - added security headers (X-Content-Type-Options, X-Frame-Options, Referrer-Policy)
+- 2026-02-02: Production audit - hidden X-Powered-By header
+- 2026-02-02: Production audit - updated privacy/terms to reflect Replit auth (not Google OAuth)
+- 2026-02-02: Production audit - aligned legal text with actual functionality
 - 2026-02-02: Removed root package.json/lockfile to eliminate multi-lockfile warning
 - 2026-02-02: Added outputFileTracingRoot to next.config.mjs for proper workspace detection
 - 2026-02-02: Updated deployment to use npm ci for deterministic builds
