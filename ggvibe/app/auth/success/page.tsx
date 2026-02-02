@@ -2,6 +2,57 @@
 
 import { useEffect, useState } from "react";
 
+const styles = {
+  container: {
+    minHeight: "100vh",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
+    padding: "1rem",
+  } as React.CSSProperties,
+  card: {
+    textAlign: "center" as const,
+    padding: "2rem",
+    backgroundColor: "rgba(30, 41, 59, 0.5)",
+    borderRadius: "1rem",
+    border: "1px solid #334155",
+    maxWidth: "24rem",
+    width: "100%",
+  } as React.CSSProperties,
+  iconContainer: {
+    width: "4rem",
+    height: "4rem",
+    backgroundColor: "rgba(34, 197, 94, 0.2)",
+    borderRadius: "50%",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    margin: "0 auto 1.5rem",
+  } as React.CSSProperties,
+  title: {
+    fontSize: "1.5rem",
+    fontWeight: "bold",
+    color: "#ffffff",
+    marginBottom: "0.5rem",
+  } as React.CSSProperties,
+  subtitle: {
+    color: "#94a3b8",
+    marginBottom: "1.5rem",
+  } as React.CSSProperties,
+  button: {
+    width: "100%",
+    padding: "0.75rem 1.5rem",
+    backgroundColor: "#2563eb",
+    color: "#ffffff",
+    fontWeight: 500,
+    borderRadius: "0.5rem",
+    border: "none",
+    cursor: "pointer",
+    fontSize: "1rem",
+  } as React.CSSProperties,
+};
+
 export default function AuthSuccessPage() {
   const [countdown, setCountdown] = useState(2);
   const deepLinkScheme = process.env.NEXT_PUBLIC_MOBILE_DEEP_LINK_SCHEME;
@@ -36,11 +87,11 @@ export default function AuthSuccessPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800">
-      <div className="text-center p-8 bg-slate-800/50 rounded-2xl border border-slate-700 max-w-md mx-4">
-        <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+    <div style={styles.container}>
+      <div style={styles.card}>
+        <div style={styles.iconContainer}>
           <svg
-            className="w-8 h-8 text-green-400"
+            style={{ width: "2rem", height: "2rem", color: "#4ade80" }}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -53,15 +104,12 @@ export default function AuthSuccessPage() {
             />
           </svg>
         </div>
-        <h1 className="text-2xl font-bold text-white mb-2">Login Successful!</h1>
-        <p className="text-slate-400 mb-6">
+        <h1 style={styles.title}>Login Successful!</h1>
+        <p style={styles.subtitle}>
           You have been authenticated successfully.
           {countdown > 0 && ` Redirecting in ${countdown}...`}
         </p>
-        <button
-          onClick={handleReturnToApp}
-          className="w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
-        >
+        <button onClick={handleReturnToApp} style={styles.button}>
           {deepLinkScheme ? "Return to App" : "Continue to Dashboard"}
         </button>
       </div>
