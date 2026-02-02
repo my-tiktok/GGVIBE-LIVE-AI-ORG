@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import * as client from "openid-client";
 import memoize from "memoizee";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { db } from "@/lib/db";
 import { users } from "@/lib/schema";
 import { getSession } from "@/lib/session";
@@ -16,11 +16,28 @@ const getOidcConfig = memoize(
   { maxAge: 3600 * 1000 }
 );
 
+function getBaseUrl(request: Request, headersList: Headers): string {
+  const forwardedHost = headersList.get("x-forwarded-host");
+  const forwardedProto = headersList.get("x-forwarded-proto") || "https";
+  
+  if (forwardedHost) {
+    return `${forwardedProto}://${forwardedHost}`;
+  }
+  
+  if (process.env.NEXTAUTH_URL) {
+    return process.env.NEXTAUTH_URL;
+  }
+  
+  const url = new URL(request.url);
+  return `${url.protocol}//${url.host}`;
+}
+
 export async function GET(request: Request) {
+  const headersList = await headers();
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state");
-  const baseUrl = `${url.protocol}//${url.host}`;
+  const baseUrl = getBaseUrl(request, headersList);
   
   const cookieStore = await cookies();
   const codeVerifier = cookieStore.get("code_verifier")?.value;
