@@ -3,7 +3,7 @@
 ## Overview
 GGVIBE LIVE AI is an AI-powered chat assistant built with Next.js 15 (App Router) and Replit Auth. The application is deployed on Replit.
 
-**Domain**: https://ggvibe-chatgpt-ai.com
+**Domain**: https://ggvibe-chatgpt-ai.org
 **App Directory**: /ggvibe
 
 ## Project Structure
@@ -60,7 +60,7 @@ npm run start # Production server
 ## Static Files
 Place verification files (Google Search Console, etc.) in `ggvibe/public/`:
 - Example: `ggvibe/public/google123abc.html`
-- Accessible at: `https://ggvibe-chatgpt-ai.com/google123abc.html`
+- Accessible at: `https://ggvibe-chatgpt-ai.org/google123abc.html`
 
 ## Environment Variables Required
 These are set as Replit Secrets:
@@ -81,6 +81,10 @@ Replit Auth is used for user authentication via OpenID Connect.
 - Package manager: npm
 
 ## Recent Changes
+- 2026-02-02: Production hardening - fixed OAuth baseUrl detection using x-forwarded headers
+- 2026-02-02: SEO hardening - canonical URLs, sitemap, robots.txt all point to .org domain
+- 2026-02-02: Security update - allowedDevOrigins now environment-aware (no wildcards in prod)
+- 2026-02-02: Updated hono 4.10.6 -> 4.11.4 (security fix)
 - 2026-02-02: Added Replit Auth with iron-session for secure authentication
 - 2026-02-02: Added PostgreSQL database with Drizzle ORM for users/sessions
 - 2026-02-01: Production deployment config - $PORT fallback, autoscale deployment target, allowedDevOrigins
