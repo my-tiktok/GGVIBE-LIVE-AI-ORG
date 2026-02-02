@@ -1,4 +1,10 @@
+"use client";
+
+import { useAuth } from "@/hooks/use-auth";
+
 export default function HomePage() {
+  const { user, isLoading, isAuthenticated, logout } = useAuth();
+
   return (
     <main style={{
       minHeight: '100vh',
@@ -17,17 +23,52 @@ export default function HomePage() {
         <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#00d4ff' }}>
           GGVIBE LIVE AI
         </div>
-        <nav style={{ display: 'flex', gap: '24px' }}>
+        <nav style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
           <a href="/privacy" style={{ color: 'rgba(255,255,255,0.8)', textDecoration: 'none' }}>Privacy</a>
           <a href="/terms" style={{ color: 'rgba(255,255,255,0.8)', textDecoration: 'none' }}>Terms</a>
-          <a href="/api/auth/signin" style={{
-            background: '#00d4ff',
-            color: '#0f0f23',
-            padding: '8px 20px',
-            borderRadius: '8px',
-            textDecoration: 'none',
-            fontWeight: '600',
-          }}>Sign In</a>
+          {isLoading ? (
+            <span style={{ color: 'rgba(255,255,255,0.6)' }}>Loading...</span>
+          ) : isAuthenticated ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              {user?.profileImageUrl && (
+                <img 
+                  src={user.profileImageUrl} 
+                  alt="Profile" 
+                  style={{ 
+                    width: '32px', 
+                    height: '32px', 
+                    borderRadius: '50%',
+                    border: '2px solid #00d4ff'
+                  }} 
+                />
+              )}
+              <span style={{ color: 'rgba(255,255,255,0.8)' }}>
+                {user?.firstName || user?.email || 'User'}
+              </span>
+              <button 
+                onClick={logout}
+                style={{
+                  background: 'rgba(255,255,255,0.1)',
+                  color: 'white',
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  cursor: 'pointer',
+                  fontWeight: '500',
+                }}>
+                Logout
+              </button>
+            </div>
+          ) : (
+            <a href="/api/login" style={{
+              background: '#00d4ff',
+              color: '#0f0f23',
+              padding: '8px 20px',
+              borderRadius: '8px',
+              textDecoration: 'none',
+              fontWeight: '600',
+            }}>Sign In</a>
+          )}
         </nav>
       </header>
 
@@ -40,46 +81,72 @@ export default function HomePage() {
         padding: '40px 20px',
         textAlign: 'center',
       }}>
-        <h1 style={{
-          fontSize: 'clamp(2.5rem, 8vw, 4.5rem)',
-          margin: '0 0 24px 0',
-          background: 'linear-gradient(90deg, #00d4ff, #7c3aed, #f472b6)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          backgroundClip: 'text',
-        }}>
-          GGVIBE LIVE AI
-        </h1>
-        <p style={{
-          fontSize: 'clamp(1.1rem, 3vw, 1.5rem)',
-          maxWidth: '700px',
-          margin: '0 0 40px 0',
-          color: 'rgba(255,255,255,0.8)',
-          lineHeight: 1.6,
-        }}>
-          Your intelligent AI-powered chat assistant. Experience natural conversations,
-          get instant answers, and unlock creativity with advanced AI technology.
-        </p>
+        {isAuthenticated ? (
+          <>
+            <h1 style={{
+              fontSize: 'clamp(2rem, 6vw, 3.5rem)',
+              margin: '0 0 24px 0',
+              background: 'linear-gradient(90deg, #00d4ff, #7c3aed, #f472b6)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+            }}>
+              Welcome back, {user?.firstName || 'User'}!
+            </h1>
+            <p style={{
+              fontSize: 'clamp(1.1rem, 3vw, 1.5rem)',
+              maxWidth: '700px',
+              margin: '0 0 40px 0',
+              color: 'rgba(255,255,255,0.8)',
+              lineHeight: 1.6,
+            }}>
+              You&apos;re signed in and ready to use GGVIBE LIVE AI.
+            </p>
+          </>
+        ) : (
+          <>
+            <h1 style={{
+              fontSize: 'clamp(2.5rem, 8vw, 4.5rem)',
+              margin: '0 0 24px 0',
+              background: 'linear-gradient(90deg, #00d4ff, #7c3aed, #f472b6)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+            }}>
+              GGVIBE LIVE AI
+            </h1>
+            <p style={{
+              fontSize: 'clamp(1.1rem, 3vw, 1.5rem)',
+              maxWidth: '700px',
+              margin: '0 0 40px 0',
+              color: 'rgba(255,255,255,0.8)',
+              lineHeight: 1.6,
+            }}>
+              Your intelligent AI-powered chat assistant. Experience natural conversations,
+              get instant answers, and unlock creativity with advanced AI technology.
+            </p>
 
-        <div style={{
-          display: 'flex',
-          gap: '16px',
-          flexWrap: 'wrap',
-          justifyContent: 'center',
-        }}>
-          <a href="/api/auth/signin" style={{
-            background: 'linear-gradient(90deg, #00d4ff, #7c3aed)',
-            color: 'white',
-            padding: '16px 40px',
-            borderRadius: '12px',
-            textDecoration: 'none',
-            fontWeight: '600',
-            fontSize: '1.1rem',
-            transition: 'transform 0.2s',
-          }}>
-            Get Started Free
-          </a>
-        </div>
+            <div style={{
+              display: 'flex',
+              gap: '16px',
+              flexWrap: 'wrap',
+              justifyContent: 'center',
+            }}>
+              <a href="/api/login" style={{
+                background: 'linear-gradient(90deg, #00d4ff, #7c3aed)',
+                color: 'white',
+                padding: '16px 40px',
+                borderRadius: '12px',
+                textDecoration: 'none',
+                fontWeight: '600',
+                fontSize: '1.1rem',
+                transition: 'transform 0.2s',
+              }}>
+                Get Started Free
+              </a>
+            </div>
+          </>
+        )}
 
         <div style={{
           marginTop: '80px',
