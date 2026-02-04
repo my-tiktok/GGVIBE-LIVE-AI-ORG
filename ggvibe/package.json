@@ -14,7 +14,7 @@
     "express-session": "^1.19.0",
     "iron-session": "^8.0.4",
     "memoizee": "^0.4.17",
-    "next": "15.5.11",
+    "next": "16.1.6",
     "next-auth": "4.24.13",
     "openid-client": "^6.8.1",
     "passport": "^0.7.0",
