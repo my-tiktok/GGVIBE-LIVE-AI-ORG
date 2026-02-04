@@ -1,0 +1,8 @@
+{
+  "name": "ggvibe-live-ai-org-root",
+  "private": true,
+  "scripts": {
+    "build": "cd ggvibe && npm ci && npm run build",
+    "start": "cd ggvibe && npm run start"
+  }
+}

@@ -33,27 +33,6 @@ const nextConfig = {
   outputFileTracingRoot: join(__dirname, ".."),
   allowedDevOrigins: buildAllowedDevOrigins(),
 
-  /**
-   * CRITICAL: OpenAI domain verification hits:
-   *   /.well-known/openai-apps-challenge
-   *
-   * Replit + Next App Router can 404 on .well-known routes in production.
-   * This rewrite guarantees a 200 by routing to the stable API handler.
-   */
-  async rewrites() {
-    return [
-      {
-        source: "/.well-known/openai-apps-challenge",
-        destination: "/api/openai-apps-challenge",
-      },
-      // Optional: keep this if you also serve a legacy text file endpoint
-      {
-        source: "/.well-known/openai-domain-verification.txt",
-        destination: "/api/openai-domain-verification",
-      },
-    ];
-  },
-
   async headers() {
     return [
       {
