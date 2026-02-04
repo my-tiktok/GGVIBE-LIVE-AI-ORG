@@ -99,6 +99,10 @@ Replit Auth is used for user authentication via OpenID Connect.
 - Package manager: npm
 
 ## Recent Changes
+- 2026-02-04: Root package.json delegates build/start to /ggvibe for correct deployment
+- 2026-02-04: File-backed /.well-known/openai-apps-challenge route (no rewrites)
+- 2026-02-04: Removed rewrites from next.config.mjs for OpenAI verification
+- 2026-02-04: Added /api/health and /mcp routes
 - 2026-02-02: INCIDENT FIX - Canonical host enforcement for OAuth to fix login persistence
 - 2026-02-02: INCIDENT FIX - Host-only cookies (no Domain attr) to prevent cross-domain issues
 - 2026-02-02: INCIDENT FIX - SESSION_COOKIE_DOMAIN warning if set, recommend deletion
