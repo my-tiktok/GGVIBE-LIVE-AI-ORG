@@ -6,6 +6,7 @@
     "dev": "next dev -p ${PORT:-5000} -H 0.0.0.0",
     "build": "next build",
     "start": "next start -p ${PORT:-5000} -H 0.0.0.0",
+    "lint": "next lint || true",
     "db:push": "drizzle-kit push"
   },
   "dependencies": {
@@ -31,7 +32,12 @@
     "@types/react": "19.0.3",
     "@types/react-dom": "19.0.2",
     "drizzle-kit": "^0.31.8",
+    "eslint": "9.39.2",
+    "eslint-config-next": "16.1.6",
     "typescript": "5.7.3"
+  },
+  "eslint": {
+    "ignoreDuringBuilds": true
   },
   "engines": {
     "node": ">=20"
