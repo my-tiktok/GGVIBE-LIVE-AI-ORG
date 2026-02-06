@@ -1,0 +1,16 @@
+{
+  "name": "ggvibe-live-ai-org",
+  "version": "1.0.0",
+  "description": "AI-powered chatbot application (root workspace)",
+  "private": true,
+  "scripts": {
+    "dev": "cd ggvibe && npm run dev",
+    "build": "cd ggvibe && npm run build",
+    "start": "cd ggvibe && npm run start",
+    "db:push": "cd ggvibe && npm run db:push",
+    "install": "npm install && cd ggvibe && npm install"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

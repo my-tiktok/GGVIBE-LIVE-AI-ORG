@@ -34,25 +34,13 @@ const nextConfig = {
   allowedDevOrigins: buildAllowedDevOrigins(),
 
   /**
-   * CRITICAL: OpenAI domain verification hits:
-   *   /.well-known/openai-apps-challenge
-   *
-   * Replit + Next App Router can 404 on .well-known routes in production.
-   * This rewrite guarantees a 200 by routing to the stable API handler.
+   * CRITICAL: Do NOT use rewrites/redirects/middleware for protected paths:
+   *   /.well-known/* must be file-backed (served from /public)
+   *   /api/health, /mcp must not be intercepted
+   * 
+   * File-backed routes are served directly by Next.js static handler,
+   * ensuring compatibility with all domains and avoiding redirect loops.
    */
-  async rewrites() {
-    return [
-      {
-        source: "/.well-known/openai-apps-challenge",
-        destination: "/api/openai-apps-challenge",
-      },
-      // Optional: keep this if you also serve a legacy text file endpoint
-      {
-        source: "/.well-known/openai-domain-verification.txt",
-        destination: "/api/openai-domain-verification",
-      },
-    ];
-  },
 
   async headers() {
     return [
