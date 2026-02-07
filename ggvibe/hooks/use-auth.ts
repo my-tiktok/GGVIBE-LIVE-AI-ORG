@@ -56,9 +56,12 @@ export function useAuth() {
   return {
     user,
     isLoading,
+    loading: isLoading,
     isAuthenticated: !!user,
     login,
     logout,
     refetch: fetchUser,
   };
 }
+
+export default useAuth;

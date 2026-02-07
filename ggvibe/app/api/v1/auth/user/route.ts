@@ -1,27 +1,49 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
 import { generateRequestId } from "@/lib/request-id";
+import { jsonError } from "@/lib/http/api-response";
+import { rateLimit, rateLimitHeaders } from "@/lib/security/rate-limit";
 
-export async function GET() {
+export async function GET(request: Request) {
   const requestId = generateRequestId();
+  const rate = rateLimit(request, {
+    limit: 30,
+    windowMs: 60_000,
+    keyPrefix: "v1-auth-user",
+  });
+  const rateHeaders = rateLimitHeaders(rate);
+  rateHeaders.set("X-Request-Id", requestId);
 
   const headers = {
     "Cache-Control": "no-cache, no-store, must-revalidate",
     "X-Request-Id": requestId,
   };
+  const combinedHeaders = { ...headers, ...Object.fromEntries(rateHeaders) };
 
   try {
+    if (!rate.allowed) {
+      return jsonError(
+        {
+          error: "rate_limited",
+          message: "Too many requests. Please try again later.",
+          requestId,
+        },
+        429,
+        combinedHeaders
+      );
+    }
+
     const session = await getSession();
 
     if (!session.isLoggedIn) {
-      return NextResponse.json(
+      return jsonError(
         {
-          authenticated: false,
           error: "unauthorized",
           message: "Not authenticated",
           requestId,
         },
-        { status: 401, headers }
+        401,
+        combinedHeaders
       );
     }
 
@@ -37,17 +59,18 @@ export async function GET() {
         },
         requestId,
       },
-      { headers }
+      { headers: combinedHeaders }
     );
   } catch (error) {
     console.error(`[${requestId}] Error fetching user:`, error);
-    return NextResponse.json(
+    return jsonError(
       {
         error: "internal_error",
         message: "Failed to fetch user",
         requestId,
       },
-      { status: 500, headers }
+      500,
+      combinedHeaders
     );
   }
 }

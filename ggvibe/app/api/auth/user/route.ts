@@ -4,31 +4,63 @@ import { users } from "@/lib/schema";
 import { eq } from "drizzle-orm";
 import { getSession } from "@/lib/session";
 import { generateRequestId } from "@/lib/request-id";
+import { jsonError } from "@/lib/http/api-response";
+import { rateLimit, rateLimitHeaders } from "@/lib/security/rate-limit";
 
 const headers = (requestId: string) => ({
   "X-Request-Id": requestId,
   "Cache-Control": "no-cache, no-store, must-revalidate",
 });
 
-export async function GET() {
+export async function GET(request: Request) {
   const requestId = generateRequestId();
+  const rate = rateLimit(request, {
+    limit: 30,
+    windowMs: 60_000,
+    keyPrefix: "auth-user",
+  });
+  const rateHeaders = rateLimitHeaders(rate);
+  rateHeaders.set("X-Request-Id", requestId);
+  const combinedHeaders = { ...headers(requestId), ...Object.fromEntries(rateHeaders) };
   
   try {
+    if (!rate.allowed) {
+      return jsonError(
+        {
+          error: "rate_limited",
+          message: "Too many requests. Please try again later.",
+          requestId,
+        },
+        429,
+        rateHeaders
+      );
+    }
+
     const session = await getSession();
     
     if (!session.isLoggedIn || !session.userId) {
-      return NextResponse.json(
-        { authenticated: false, error: "unauthorized", requestId },
-        { status: 401, headers: headers(requestId) }
+      return jsonError(
+        {
+          error: "unauthorized",
+          message: "Not authenticated",
+          requestId,
+        },
+        401,
+        combinedHeaders
       );
     }
     
     const now = Math.floor(Date.now() / 1000);
     if (session.expiresAt && now > session.expiresAt) {
       session.destroy();
-      return NextResponse.json(
-        { authenticated: false, error: "session_expired", requestId },
-        { status: 401, headers: headers(requestId) }
+      return jsonError(
+        {
+          error: "session_expired",
+          message: "Session expired",
+          requestId,
+        },
+        401,
+        combinedHeaders
       );
     }
     
@@ -36,21 +68,31 @@ export async function GET() {
     
     if (!user) {
       session.destroy();
-      return NextResponse.json(
-        { authenticated: false, error: "user_not_found", requestId },
-        { status: 401, headers: headers(requestId) }
+      return jsonError(
+        {
+          error: "user_not_found",
+          message: "User not found",
+          requestId,
+        },
+        401,
+        combinedHeaders
       );
     }
     
     return NextResponse.json(
       { authenticated: true, user, requestId },
-      { headers: headers(requestId) }
+      { headers: combinedHeaders }
     );
   } catch (error) {
     console.error("Error fetching user:", error instanceof Error ? error.message : "Unknown error");
-    return NextResponse.json(
-      { authenticated: false, error: "internal_error", requestId },
-      { status: 500, headers: headers(requestId) }
+    return jsonError(
+      {
+        error: "internal_error",
+        message: "Failed to fetch user",
+        requestId,
+      },
+      500,
+      combinedHeaders
     );
   }
 }

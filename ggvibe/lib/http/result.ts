@@ -16,8 +16,15 @@ export type HttpError = {
 
 export type HttpResult<T> = HttpSuccess<T> | HttpError;
 
+export type Ok<T> = HttpSuccess<T>;
+export type Err = HttpError;
+
 export function success<T>(body: T, status = 200): HttpSuccess<T> {
   return { ok: true, status, body };
+}
+
+export function ok<T>(data: T, status = 200): Ok<T> {
+  return success(data, status);
 }
 
 export function error(
@@ -31,6 +38,10 @@ export function error(
     status,
     body: { error: errorCode, message, requestId },
   };
+}
+
+export function err(message: string, status = 500, requestId?: string): Err {
+  return error("error", status, message, requestId);
 }
 
 export function generateRequestId(): string {
