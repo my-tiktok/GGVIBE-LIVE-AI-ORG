@@ -8,6 +8,8 @@ import { getSession } from "@/lib/session";
 import { getCanonicalUrl, getCallbackUrl } from "@/lib/url/base-url";
 import { generateRequestId } from "@/lib/request-id";
 import { isProduction } from "@/lib/env";
+import { jsonError } from "@/lib/http/api-response";
+import { rateLimit, rateLimitHeaders } from "@/lib/security/rate-limit";
 
 const getOidcConfig = memoize(
   async () => {
@@ -42,6 +44,13 @@ export async function GET(request: Request) {
   const state = url.searchParams.get("state");
   const errorParam = url.searchParams.get("error");
   const errorDescription = url.searchParams.get("error_description");
+  const rate = rateLimit(request, {
+    limit: 20,
+    windowMs: 60_000,
+    keyPrefix: "callback",
+  });
+  const rateHeaders = rateLimitHeaders(rate);
+  rateHeaders.set("X-Request-Id", requestId);
 
   const requestHost = url.host;
   const canonicalHost = new URL(canonicalUrl).host;
@@ -49,14 +58,30 @@ export async function GET(request: Request) {
   if (isProduction() && requestHost !== canonicalHost) {
     console.log(`[${requestId}] Callback on non-canonical host: ${requestHost}. Preserving params and redirecting.`);
     const canonicalCallback = `${canonicalUrl}/api/callback${url.search}`;
-    return safeRedirect(canonicalCallback, requestId);
+    const response = safeRedirect(canonicalCallback, requestId);
+    rateHeaders.forEach((value, key) => response.headers.set(key, value));
+    return response;
   }
 
   if (errorParam) {
     console.error(`[${requestId}] OAuth provider error: ${errorParam}`, {
       description: errorDescription,
     });
-    return safeRedirect(`${canonicalUrl}/login?error=provider_error`, requestId);
+    const response = safeRedirect(`${canonicalUrl}/login?error=provider_error`, requestId);
+    rateHeaders.forEach((value, key) => response.headers.set(key, value));
+    return response;
+  }
+
+  if (!rate.allowed) {
+    return jsonError(
+      {
+        error: "rate_limited",
+        message: "Too many requests. Please try again later.",
+        requestId,
+      },
+      429,
+      rateHeaders
+    );
   }
 
   const cookieStore = await cookies();
@@ -65,17 +90,23 @@ export async function GET(request: Request) {
 
   if (!code) {
     console.error(`[${requestId}] Missing authorization code`);
-    return safeRedirect(`${canonicalUrl}/login?error=invalid_callback`, requestId);
+    const response = safeRedirect(`${canonicalUrl}/login?error=invalid_callback`, requestId);
+    rateHeaders.forEach((value, key) => response.headers.set(key, value));
+    return response;
   }
 
   if (!codeVerifier) {
     console.error(`[${requestId}] Missing code_verifier cookie - this usually means cookies were set on a different domain`);
-    return safeRedirect(`${canonicalUrl}/login?error=invalid_callback`, requestId);
+    const response = safeRedirect(`${canonicalUrl}/login?error=invalid_callback`, requestId);
+    rateHeaders.forEach((value, key) => response.headers.set(key, value));
+    return response;
   }
 
   if (!state || state !== savedState) {
     console.error(`[${requestId}] State mismatch - expected: ${savedState?.slice(0,8)}..., got: ${state?.slice(0,8)}...`);
-    return safeRedirect(`${canonicalUrl}/login?error=invalid_callback`, requestId);
+    const response = safeRedirect(`${canonicalUrl}/login?error=invalid_callback`, requestId);
+    rateHeaders.forEach((value, key) => response.headers.set(key, value));
+    return response;
   }
 
   try {
@@ -94,7 +125,9 @@ export async function GET(request: Request) {
 
     if (!claims?.sub) {
       console.error(`[${requestId}] Invalid claims: missing sub`);
-      return safeRedirect(`${canonicalUrl}/login?error=invalid_claims`, requestId);
+      const response = safeRedirect(`${canonicalUrl}/login?error=invalid_claims`, requestId);
+      rateHeaders.forEach((value, key) => response.headers.set(key, value));
+      return response;
     }
 
     await db
@@ -132,7 +165,9 @@ export async function GET(request: Request) {
     await session.save();
 
     console.log(`[${requestId}] OAuth success for user: ${claims.sub}`);
-    return safeRedirect(`${canonicalUrl}/auth/success`, requestId);
+    const response = safeRedirect(`${canonicalUrl}/auth/success`, requestId);
+    rateHeaders.forEach((value, key) => response.headers.set(key, value));
+    return response;
   } catch (error) {
     const isInvalidGrant =
       error instanceof Error &&
@@ -142,13 +177,17 @@ export async function GET(request: Request) {
 
     if (isInvalidGrant) {
       console.error(`[${requestId}] Invalid grant error`);
-      return safeRedirect(`${canonicalUrl}/login?error=invalid_callback`, requestId);
+      const response = safeRedirect(`${canonicalUrl}/login?error=invalid_callback`, requestId);
+      rateHeaders.forEach((value, key) => response.headers.set(key, value));
+      return response;
     }
 
     console.error(`[${requestId}] OAuth callback error:`, {
       type: error instanceof Error ? error.constructor.name : "Unknown",
       message: error instanceof Error ? error.message : "Unknown error",
     });
-    return safeRedirect(`${canonicalUrl}/login?error=auth_failed`, requestId);
+    const response = safeRedirect(`${canonicalUrl}/login?error=auth_failed`, requestId);
+    rateHeaders.forEach((value, key) => response.headers.set(key, value));
+    return response;
   }
 }

@@ -5,6 +5,8 @@ import { cookies } from "next/headers";
 import { getCanonicalUrl, getCallbackUrl } from "@/lib/url/base-url";
 import { generateRequestId } from "@/lib/request-id";
 import { isProduction } from "@/lib/env";
+import { jsonError } from "@/lib/http/api-response";
+import { rateLimit, rateLimitHeaders } from "@/lib/security/rate-limit";
 
 const getOidcConfig = memoize(
   async () => {
@@ -20,6 +22,25 @@ export async function GET(request: Request) {
   const requestId = generateRequestId();
   const canonicalUrl = getCanonicalUrl();
   const redirectUri = getCallbackUrl();
+  const rate = rateLimit(request, {
+    limit: 10,
+    windowMs: 60_000,
+    keyPrefix: "login",
+  });
+  const rateHeaders = rateLimitHeaders(rate);
+  rateHeaders.set("X-Request-Id", requestId);
+
+  if (!rate.allowed) {
+    return jsonError(
+      {
+        error: "rate_limited",
+        message: "Too many login attempts. Please try again later.",
+        requestId,
+      },
+      429,
+      rateHeaders
+    );
+  }
 
   const requestHost = new URL(request.url).host;
   const canonicalHost = new URL(canonicalUrl).host;
@@ -28,6 +49,7 @@ export async function GET(request: Request) {
     console.log(`[${requestId}] Redirecting to canonical host for login: ${requestHost} -> ${canonicalHost}`);
     const response = NextResponse.redirect(`${canonicalUrl}/api/login`);
     response.headers.set("X-Request-Id", requestId);
+    rateHeaders.forEach((value, key) => response.headers.set(key, value));
     return response;
   }
 
@@ -61,6 +83,7 @@ export async function GET(request: Request) {
 
     const response = NextResponse.redirect(authUrl.href);
     response.headers.set("X-Request-Id", requestId);
+    rateHeaders.forEach((value, key) => response.headers.set(key, value));
     return response;
   } catch (error) {
     console.error(`[${requestId}] Login error:`, {
@@ -68,6 +91,7 @@ export async function GET(request: Request) {
     });
     const response = NextResponse.redirect(`${canonicalUrl}/login?error=login_failed`);
     response.headers.set("X-Request-Id", requestId);
+    rateHeaders.forEach((value, key) => response.headers.set(key, value));
     return response;
   }
 }
