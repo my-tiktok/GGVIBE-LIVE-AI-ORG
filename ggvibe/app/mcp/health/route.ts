@@ -62,7 +62,6 @@ export async function GET(request: Request) {
   }
 
   const status = missingEnv.length > 0 ? "degraded" : "healthy";
-  const httpStatus = status === "healthy" ? 200 : 503;
   const response = NextResponse.json(
     {
       status,
@@ -71,7 +70,7 @@ export async function GET(request: Request) {
       timestamp: new Date().toISOString(),
     },
     {
-      status: httpStatus,
+      status: 200,
       headers: buildResponseHeaders(cors.headers, rateHeaders),
     }
   );
@@ -79,7 +78,7 @@ export async function GET(request: Request) {
     requestId,
     method: request.method,
     path: "/mcp/health",
-    status: httpStatus,
+    status: 200,
     latencyMs: Date.now() - startedAt,
   });
   return response;

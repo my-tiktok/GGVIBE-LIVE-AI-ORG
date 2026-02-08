@@ -105,6 +105,12 @@ Replit Auth is used for user authentication via OpenID Connect.
 - Package manager: npm
 
 ## Recent Changes
+- 2026-02-08: CRITICAL FIX - Updated OpenAI verification token to correct value (neoIMNB3-...)
+- 2026-02-08: FIX - /mcp/health always returns HTTP 200 (was 503 on missing env, blocking scanner)
+- 2026-02-08: FIX - Env validation accepts NEXTAUTH_SECRET as SESSION_SECRET fallback
+- 2026-02-08: CLEANUP - Removed unused deps: next-auth, passport, express-session, connect-pg-simple
+- 2026-02-08: Added ggvibe/.gitignore (prevents .next from being committed)
+- 2026-02-08: Created docs/OPERATIONS.md with deploy config, verification, and troubleshooting
 - 2026-02-08: Production stabilization - installed missing dependencies, created database
 - 2026-02-08: Fixed CSP frame-ancestors to allow Replit iframe preview
 - 2026-02-08: Fixed allowedDevOrigins to include all Replit domains dynamically
