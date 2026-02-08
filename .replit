@@ -20,11 +20,12 @@ name = "GGVIBE Web"
 author = "agent"
 
 [workflows.workflow.metadata]
-outputType = "console"
+outputType = "webview"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "echo \"Waiting for build verification...\" && sleep 999999"
+args = "cd ggvibe && npm run dev"
+waitForPort = 5000
 
 [[ports]]
 localPort = 5000
