@@ -94,7 +94,7 @@ export async function GET(request: Request) {
       method: "STREAM",
       path: "/api/v1/chat/stream",
       description: "Server-Sent Events (SSE) streaming endpoint for real-time chat",
-      authentication: "Firebase ID Token (Authorization header)",
+      authentication: "Session cookie",
     },
     {
       name: "User Authentication",

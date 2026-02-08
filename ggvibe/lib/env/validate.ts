@@ -5,7 +5,6 @@ type EnvCheck = {
 
 const REQUIRED_ENV: EnvCheck[] = [
   { name: "REPL_ID", requiredFor: "OIDC login" },
-  { name: "ISSUER_URL", requiredFor: "OIDC login" },
   { name: "DATABASE_URL", requiredFor: "database access" },
   { name: "SESSION_SECRET", requiredFor: "session persistence" },
 ];

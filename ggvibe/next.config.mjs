@@ -5,23 +5,26 @@ import { fileURLToPath } from "url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const buildAllowedDevOrigins = () => {
-  const origins = [];
-  const isProduction = process.env.NODE_ENV === "production";
+  const origins = [
+    "http://localhost:5000",
+    "http://127.0.0.1:5000",
+    "https://ggvibe-chatgpt-ai.org",
+    "https://www.ggvibe-chatgpt-ai.org",
+    "https://ggvibe-live-ai-1.replit.app",
+  ];
 
-  if (isProduction) {
+  if (process.env.REPLIT_DEV_DOMAIN) {
     origins.push(
-      "https://ggvibe-chatgpt-ai.org",
-      "https://www.ggvibe-chatgpt-ai.org",
-      "https://ggvibe-live-ai-1.replit.app"
+      process.env.REPLIT_DEV_DOMAIN,
+      `https://${process.env.REPLIT_DEV_DOMAIN}`
     );
-  } else {
-    origins.push("http://localhost:5000", "http://127.0.0.1:5000");
-    if (process.env.REPLIT_DEV_DOMAIN) {
-      origins.push(
-        process.env.REPLIT_DEV_DOMAIN,
-        `https://${process.env.REPLIT_DEV_DOMAIN}`
-      );
-    }
+  }
+
+  if (process.env.REPLIT_DOMAINS) {
+    process.env.REPLIT_DOMAINS.split(",").forEach((d) => {
+      const trimmed = d.trim();
+      if (trimmed) origins.push(`https://${trimmed}`);
+    });
   }
 
   return origins;
@@ -93,7 +96,7 @@ const nextConfig = {
               "img-src 'self' data: blob: https:",
               "font-src 'self' data: https:",
               "connect-src 'self' https: wss:",
-              "frame-ancestors 'none'",
+              "frame-ancestors 'self' https://*.replit.dev https://*.replit.app https://*.repl.co",
               "base-uri 'self'",
               "form-action 'self'",
             ].join("; "),
