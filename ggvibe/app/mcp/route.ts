@@ -15,16 +15,6 @@ interface McpEndpoint {
   authentication?: string;
 }
 
-function withHeaders(headers: Headers, extras?: HeadersInit) {
-  if (!extras) {
-    return headers;
-  }
-  Object.entries(extras).forEach(([key, value]) => {
-    headers.set(key, String(value));
-  });
-  return headers;
-}
-
 function buildResponseHeaders(
   baseHeaders: Headers,
   rateHeaders: Headers
@@ -38,20 +28,13 @@ function buildResponseHeaders(
 export async function OPTIONS(request: Request) {
   const requestId = getRequestId(request);
   const cors = buildCorsHeaders(request, requestId);
-  if (!cors.ok) {
-    return cors.response;
-  }
-  const headers = withHeaders(cors.headers);
-  return new Response(null, { status: 204, headers });
+  return new Response(null, { status: 204, headers: cors.headers });
 }
 
 export async function GET(request: Request) {
   const startedAt = Date.now();
   const requestId = getRequestId(request);
   const cors = buildCorsHeaders(request, requestId);
-  if (!cors.ok) {
-    return cors.response;
-  }
   const rate = rateLimit(request, {
     limit: 30,
     windowMs: 60_000,

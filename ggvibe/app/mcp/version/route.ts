@@ -18,9 +18,6 @@ function buildResponseHeaders(
 export async function OPTIONS(request: Request) {
   const requestId = getRequestId(request);
   const cors = buildCorsHeaders(request, requestId);
-  if (!cors.ok) {
-    return cors.response;
-  }
   return new Response(null, { status: 204, headers: cors.headers });
 }
 
@@ -28,10 +25,6 @@ export async function GET(request: Request) {
   const startedAt = Date.now();
   const requestId = getRequestId(request);
   const cors = buildCorsHeaders(request, requestId);
-  if (!cors.ok) {
-    return cors.response;
-  }
-
   const rate = rateLimit(request, {
     limit: 60,
     windowMs: 60_000,

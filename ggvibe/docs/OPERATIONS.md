@@ -59,9 +59,13 @@ curl -i -H "Accept: application/json" https://ggvibe-chatgpt-ai.org/mcp
 
 # OPTIONS preflight
 curl -i -X OPTIONS https://ggvibe-chatgpt-ai.org/mcp
+
+# OpenAI scanner with Origin header (must NOT return 403)
+curl -i -H "Origin: https://chatgpt.com" https://ggvibe-chatgpt-ai.org/mcp
+curl -i -H "Origin: https://platform.openai.com" https://ggvibe-chatgpt-ai.org/mcp
 ```
 
-Expected: HTTP 200 (GET) / HTTP 204 (OPTIONS)
+Expected: HTTP 200 (GET) / HTTP 204 (OPTIONS). MCP endpoints allow all origins.
 
 ## Auth / OIDC Configuration
 

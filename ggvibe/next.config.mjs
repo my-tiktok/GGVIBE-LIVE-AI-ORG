@@ -8,6 +8,8 @@ const buildAllowedDevOrigins = () => {
   const origins = [
     "http://localhost:5000",
     "http://127.0.0.1:5000",
+    "http://localhost",
+    "http://127.0.0.1",
     "https://ggvibe-chatgpt-ai.org",
     "https://www.ggvibe-chatgpt-ai.org",
     "https://ggvibe-live-ai-1.replit.app",
