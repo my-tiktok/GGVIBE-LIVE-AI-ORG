@@ -31,10 +31,6 @@ waitForPort = 5000
 localPort = 5000
 externalPort = 80
 
-[[ports]]
-localPort = 5001
-externalPort = 3000
-
 [deployment]
 build = ["bash", "-c", "cd ggvibe && npm ci && npm run build"]
 run = ["bash", "-c", "cd ggvibe && npm run start"]
