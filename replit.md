@@ -104,10 +104,18 @@ Replit Auth is used for user authentication via OpenID Connect.
 - Node.js version: 20 LTS
 - Package manager: npm
 
+## Deployment Architecture
+- Root package.json is DELETED — prevents Replit from detecting root as Node project
+- Guard script `scripts/guard-root.sh` runs first in build to block/clean any root artifacts
+- Build: `bash scripts/guard-root.sh && cd ggvibe && npm ci --no-audit --no-fund && NODE_OPTIONS='--max-old-space-size=1536' npm run build`
+- Run: `cd ggvibe && npm run start`
+- Target: autoscale
+
 ## Recent Changes
-- 2026-02-09: DEPLOY FIX - Root package.json restored as empty (zero deps) so Replit auto-install succeeds instantly with no memory usage
-- 2026-02-09: DEPLOY FIX - Simplified build: cd ggvibe && npm ci && npm run build (removed guard script from build chain)
-- 2026-02-09: DEPLOY FIX - Simplified run: cd ggvibe && npm run start
+- 2026-02-09: DEPLOY FIX v3 - Removed root package.json entirely to prevent Replit auto-detection
+- 2026-02-09: DEPLOY FIX v3 - Guard script runs in build to block/clean any root Node artifacts
+- 2026-02-09: DEPLOY FIX v3 - Build uses npm ci (deterministic) with --no-audit --no-fund for speed
+- 2026-02-09: DEPLOY FIX v3 - Added root .npmrc as additional safeguard
 - 2026-02-09: DEPLOY FIX - Kept NODE_OPTIONS=--max-old-space-size=1536 for build OOM protection
 - 2026-02-09: DOCS - Added Deployment Architecture section to OPERATIONS.md
 - 2026-02-08: CRITICAL FIX - Updated OpenAI verification token to correct value (neoIMNB3-...)
