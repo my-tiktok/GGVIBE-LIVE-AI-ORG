@@ -80,6 +80,7 @@ npm run start # Production server
 - `npm run dev`: Development server on port 5000
 - `npm run build`: Production build
 - `npm run start`: Production server on port 5000
+- `scripts/replit-sanity.sh`: Minimal sanity check (install + build)
 
 ## Static Files
 Place verification files (Google Search Console, etc.) in `ggvibe/public/`:
@@ -105,17 +106,18 @@ Replit Auth is used for user authentication via OpenID Connect.
 - Package manager: npm
 
 ## Deployment Architecture
-- Root package.json is DELETED — prevents Replit from detecting root as Node project
-- Guard script `scripts/guard-root.sh` runs first in build to block/clean any root artifacts
-- Build: `bash scripts/guard-root.sh && cd ggvibe && npm ci --no-audit --no-fund && NODE_OPTIONS='--max-old-space-size=1536' npm run build`
+- Root package.json exists but contains zero dependencies and zero scripts to keep auto-install instant
+- Build: `cd ggvibe && npm ci --no-audit --no-fund && NODE_OPTIONS="--max-old-space-size=1536" npm run build`
 - Run: `cd ggvibe && npm run start`
 - Target: autoscale
 
+## Production Guardrails
+- See `PROD_GUARD.md` for invariants that must not change.
+
 ## Recent Changes
-- 2026-02-09: DEPLOY FIX v3 - Removed root package.json entirely to prevent Replit auto-detection
-- 2026-02-09: DEPLOY FIX v3 - Guard script runs in build to block/clean any root Node artifacts
-- 2026-02-09: DEPLOY FIX v3 - Build uses npm ci (deterministic) with --no-audit --no-fund for speed
-- 2026-02-09: DEPLOY FIX v3 - Added root .npmrc as additional safeguard
+- 2026-02-09: DEPLOY FIX v4 - Root package.json now has zero deps/scripts to keep auto-install instant
+- 2026-02-09: DEPLOY FIX v4 - Build uses npm ci (deterministic) with --no-audit --no-fund for speed
+- 2026-02-09: DEPLOY FIX v4 - Added ggvibe/.npmrc to reduce install-time memory usage
 - 2026-02-09: DEPLOY FIX - Kept NODE_OPTIONS=--max-old-space-size=1536 for build OOM protection
 - 2026-02-09: DOCS - Added Deployment Architecture section to OPERATIONS.md
 - 2026-02-08: CRITICAL FIX - Updated OpenAI verification token to correct value (neoIMNB3-...)
