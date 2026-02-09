@@ -1,49 +1,62 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-echo "[guard] Checking root directory for stale Node artifacts..."
-echo "[guard] Working directory: $(pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+echo "=== Deployment Guard: Root Install Check ==="
+echo "pwd:       $(pwd)"
+echo "REPO_ROOT: $REPO_ROOT"
+echo ""
 
 FAIL=0
 
-if [ -f package.json ]; then
-  echo "[guard] REMOVING stale root package.json"
-  rm -f package.json
-fi
-
-if [ -f package-lock.json ]; then
-  echo "[guard] REMOVING stale root package-lock.json"
-  rm -f package-lock.json
-fi
-
-if [ -f yarn.lock ]; then
-  echo "[guard] REMOVING stale root yarn.lock"
-  rm -f yarn.lock
-fi
-
-if [ -f pnpm-lock.yaml ]; then
-  echo "[guard] REMOVING stale root pnpm-lock.yaml"
-  rm -f pnpm-lock.yaml
-fi
-
-if [ -d node_modules ]; then
-  echo "[guard] REMOVING stale root node_modules/"
-  rm -rf node_modules
-fi
-
-if [ ! -f ggvibe/package.json ]; then
-  echo "[guard] FATAL: ggvibe/package.json not found"
+if [ -f "$REPO_ROOT/package.json" ]; then
+  echo "BLOCKED: Root package.json found — removing it."
+  cat "$REPO_ROOT/package.json"
+  rm -f "$REPO_ROOT/package.json"
   FAIL=1
 fi
 
-if [ ! -f ggvibe/package-lock.json ]; then
-  echo "[guard] FATAL: ggvibe/package-lock.json not found"
+if [ -f "$REPO_ROOT/package-lock.json" ]; then
+  echo "BLOCKED: Root package-lock.json found — removing it."
+  rm -f "$REPO_ROOT/package-lock.json"
   FAIL=1
+fi
+
+if [ -f "$REPO_ROOT/yarn.lock" ]; then
+  echo "BLOCKED: Root yarn.lock found — removing it."
+  rm -f "$REPO_ROOT/yarn.lock"
+  FAIL=1
+fi
+
+if [ -f "$REPO_ROOT/pnpm-lock.yaml" ]; then
+  echo "BLOCKED: Root pnpm-lock.yaml found — removing it."
+  rm -f "$REPO_ROOT/pnpm-lock.yaml"
+  FAIL=1
+fi
+
+if [ -d "$REPO_ROOT/node_modules" ]; then
+  echo "BLOCKED: Root node_modules/ found — removing it."
+  rm -rf "$REPO_ROOT/node_modules"
 fi
 
 if [ "$FAIL" -ne 0 ]; then
-  echo "[guard] FAILED — ggvibe/ is missing required files"
+  echo ""
+  echo "WARNING: Root-level Node artifacts were detected and removed."
+  echo "Replit platform may have regenerated them. Continuing with build."
+  echo ""
+fi
+
+if [ ! -f "$REPO_ROOT/ggvibe/package.json" ]; then
+  echo "FATAL: ggvibe/package.json not found!"
   exit 1
 fi
 
-echo "[guard] Root is clean. Building from ggvibe/ only."
+if [ ! -f "$REPO_ROOT/ggvibe/package-lock.json" ]; then
+  echo "FATAL: ggvibe/package-lock.json not found!"
+  exit 1
+fi
+
+echo "PASS: Root is clean. Building from ggvibe/ only."
+echo "============================================="
