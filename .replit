@@ -33,7 +33,7 @@ externalPort = 80
 
 [deployment]
 build = ["bash", "-c", "cd ggvibe && npm ci && npm run build"]
-run = ["npm", "run", "start", "--prefix", "ggvibe"]
+run = ["bash", "-c", "cd ggvibe && npm run start"]
 deploymentTarget = "autoscale"
 
 [nix]
