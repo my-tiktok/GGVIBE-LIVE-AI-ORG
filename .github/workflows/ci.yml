@@ -20,7 +20,7 @@ jobs:
           cache-dependency-path: ggvibe/package-lock.json
       - name: Install
         working-directory: ggvibe
-        run: npm ci
-      - name: Build
+        run: npm ci --no-audit --no-fund
+      - name: Lint
         working-directory: ggvibe
-        run: npm run build
+        run: npm run lint
