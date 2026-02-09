@@ -32,8 +32,8 @@ localPort = 5000
 externalPort = 80
 
 [deployment]
-build = ["bash", "-c", "cd ggvibe && NODE_OPTIONS='--max-old-space-size=1536' npm run build"]
-run = ["bash", "-c", "cd ggvibe && npm run start"]
+build = ["bash", "-c", "cd ggvibe && npm install && NODE_OPTIONS='--max-old-space-size=1536' npm run build"]
+run = ["npm", "run", "start", "--prefix", "ggvibe"]
 deploymentTarget = "autoscale"
 
 [nix]
