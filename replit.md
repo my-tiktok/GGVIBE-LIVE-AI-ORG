@@ -105,10 +105,10 @@ Replit Auth is used for user authentication via OpenID Connect.
 - Package manager: npm
 
 ## Recent Changes
-- 2026-02-09: DEPLOY FIX - Removed root package.json entirely to prevent UPM auto-install OOM (exit 134)
-- 2026-02-09: DEPLOY FIX - Added scripts/guard-root.sh build guard to clean stale root artifacts
-- 2026-02-09: DEPLOY FIX - Added NODE_OPTIONS=--max-old-space-size=1536 to build for OOM protection
-- 2026-02-09: DEPLOY FIX - Deploy build: guard-root.sh && cd ggvibe && npm ci && npm run build
+- 2026-02-09: DEPLOY FIX - Root package.json restored as empty (zero deps) so Replit auto-install succeeds instantly with no memory usage
+- 2026-02-09: DEPLOY FIX - Simplified build: cd ggvibe && npm ci && npm run build (removed guard script from build chain)
+- 2026-02-09: DEPLOY FIX - Simplified run: cd ggvibe && npm run start
+- 2026-02-09: DEPLOY FIX - Kept NODE_OPTIONS=--max-old-space-size=1536 for build OOM protection
 - 2026-02-09: DOCS - Added Deployment Architecture section to OPERATIONS.md
 - 2026-02-08: CRITICAL FIX - Updated OpenAI verification token to correct value (neoIMNB3-...)
 - 2026-02-08: FIX - /mcp/health always returns HTTP 200 (was 503 on missing env, blocking scanner)
