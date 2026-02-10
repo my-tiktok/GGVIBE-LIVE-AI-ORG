@@ -4,22 +4,24 @@ import { generateRequestId } from "@/lib/request-id";
 import { rateLimit, rateLimitHeaders } from "@/lib/security/rate-limit";
 
 const MAX_REQUEST_SIZE = 10 * 1024;
+const MAX_TOKENS = 512;
+const MAX_STREAM_CHUNKS = 3;
 
 export async function POST(request: NextRequest) {
   const requestId = generateRequestId();
 
-  const rate = rateLimit(request, {
-    limit: 100,
+  const ipRate = rateLimit(request, {
+    limit: 60,
     windowMs: 60_000,
-    keyPrefix: "chat-stream",
+    keyPrefix: "chat-stream-ip",
   });
-  const rateHeaders = rateLimitHeaders(rate);
-  rateHeaders.set("X-Request-Id", requestId);
+  const ipRateHeaders = rateLimitHeaders(ipRate);
+  ipRateHeaders.set("X-Request-Id", requestId);
 
-  if (!rate.allowed) {
+  if (!ipRate.allowed) {
     return NextResponse.json(
       { error: "rate_limited", message: "Too many requests", requestId },
-      { status: 429, headers: Object.fromEntries(rateHeaders) }
+      { status: 429, headers: Object.fromEntries(ipRateHeaders) }
     );
   }
 
@@ -40,6 +42,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const userRate = rateLimit(request, {
+      limit: 20,
+      windowMs: 60_000,
+      keyPrefix: "chat-stream-user",
+      keySuffix: session.userId,
+    });
+    const userRateHeaders = rateLimitHeaders(userRate);
+    userRateHeaders.set("X-Request-Id", requestId);
+
+    if (!userRate.allowed) {
+      return NextResponse.json(
+        { error: "rate_limited", message: "Too many requests", requestId },
+        { status: 429, headers: Object.fromEntries(userRateHeaders) }
+      );
+    }
+
     let body: Record<string, unknown> = {};
     try {
       body = await request.json();
@@ -47,12 +65,39 @@ export async function POST(request: NextRequest) {
       body = {};
     }
 
+    const maxTokens = typeof body.maxTokens === "number" ? body.maxTokens : undefined;
+    if (maxTokens && maxTokens > MAX_TOKENS) {
+      return NextResponse.json(
+        {
+          error: "max_tokens_exceeded",
+          message: `maxTokens must be <= ${MAX_TOKENS}`,
+          requestId,
+        },
+        { status: 400, headers: { "X-Request-Id": requestId } }
+      );
+    }
+
+    console.info(`[${requestId}] Chat stream start`, {
+      userId: session.userId,
+      contentLength: request.headers.get("content-length"),
+    });
+
     const encoder = new TextEncoder();
     let sent = 0;
+    let aborted = false;
 
     const customReadable = new ReadableStream({
       async start(controller) {
         try {
+          request.signal.addEventListener(
+            "abort",
+            () => {
+              aborted = true;
+              controller.close();
+            },
+            { once: true }
+          );
+
           const initialMessage = {
             type: "stream.start",
             timestamp: new Date().toISOString(),
@@ -61,7 +106,10 @@ export async function POST(request: NextRequest) {
           controller.enqueue(encoder.encode(`data: ${JSON.stringify(initialMessage)}\n\n`));
           sent++;
 
-          for (let i = 0; i < 3; i++) {
+          for (let i = 0; i < MAX_STREAM_CHUNKS; i++) {
+            if (aborted || request.signal.aborted) {
+              return;
+            }
             await new Promise((resolve) => setTimeout(resolve, 200));
             const msgChunk = {
               type: "stream.message",
@@ -82,7 +130,7 @@ export async function POST(request: NextRequest) {
           controller.enqueue(encoder.encode(`data: ${JSON.stringify(completeMessage)}\n\n`));
           controller.close();
         } catch (error) {
-          console.error(`[${requestId}] Stream error:`, error);
+          console.error(`[${requestId}] Stream error`, error);
           const errorMessage = {
             type: "stream.error",
             error: error instanceof Error ? error.message : "Unknown error",
@@ -91,6 +139,9 @@ export async function POST(request: NextRequest) {
           controller.enqueue(encoder.encode(`data: ${JSON.stringify(errorMessage)}\n\n`));
           controller.close();
         }
+      },
+      cancel() {
+        aborted = true;
       },
     });
 
@@ -103,7 +154,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error(`[${requestId}] Stream endpoint error:`, error);
+    console.error(`[${requestId}] Stream endpoint error`, error);
     return NextResponse.json(
       { error: "internal_error", message: "Stream setup failed", requestId },
       { status: 500, headers: { "X-Request-Id": requestId } }

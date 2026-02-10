@@ -52,7 +52,11 @@ export async function GET(request: Request) {
   const rateHeaders = rateLimitHeaders(rate);
   rateHeaders.set("X-Request-Id", requestId);
 
-  const requestHost = url.host;
+  const forwardedHost = request.headers.get("x-forwarded-host");
+  const requestHost =
+    forwardedHost && forwardedHost !== "0.0.0.0"
+      ? forwardedHost.split(",")[0]?.trim()
+      : url.host;
   const canonicalHost = new URL(canonicalUrl).host;
 
   if (isProduction() && requestHost !== canonicalHost) {

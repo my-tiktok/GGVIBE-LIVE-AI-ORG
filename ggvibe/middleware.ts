@@ -5,8 +5,7 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    // Bypass middleware for health check, MCP, and OAuth challenge routes
-    '/((?!\\.well-known|mcp|api/health|api/healthz|public|_next|static).*)',
-  ],
+  // Restrict middleware scope to private payouts routes only.
+  // This avoids accidental auth gating of public routes in production.
+  matcher: ['/payouts/:path*'],
 };

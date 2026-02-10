@@ -32,8 +32,8 @@ localPort = 5000
 externalPort = 80
 
 [deployment]
-build = ["bash", "-c", "bash scripts/guard-root.sh && cd ggvibe && npm ci --no-audit --no-fund && NODE_OPTIONS='--max-old-space-size=1536' npm run build"]
-run = ["bash", "-c", "cd ggvibe && npm run start"]
+build = "cd ggvibe && npm ci --no-audit --no-fund && NODE_OPTIONS=\"--max-old-space-size=1536\" npm run build"
+run = "cd ggvibe && npm run start"
 deploymentTarget = "autoscale"
 
 [nix]

@@ -43,10 +43,15 @@ export async function GET(request: Request) {
   }
 
   const requestHost = new URL(request.url).host;
+  const forwardedHost = request.headers.get("x-forwarded-host");
+  const effectiveHost =
+    forwardedHost && forwardedHost !== "0.0.0.0"
+      ? forwardedHost.split(",")[0]?.trim()
+      : requestHost;
   const canonicalHost = new URL(canonicalUrl).host;
 
-  if (isProduction() && requestHost !== canonicalHost) {
-    console.log(`[${requestId}] Redirecting to canonical host for login: ${requestHost} -> ${canonicalHost}`);
+  if (isProduction() && effectiveHost !== canonicalHost) {
+    console.log(`[${requestId}] Redirecting to canonical host for login: ${effectiveHost} -> ${canonicalHost}`);
     const response = NextResponse.redirect(`${canonicalUrl}/api/login`);
     response.headers.set("X-Request-Id", requestId);
     rateHeaders.forEach((value, key) => response.headers.set(key, value));

@@ -30,11 +30,12 @@ export function rateLimit(
     limit,
     windowMs,
     keyPrefix,
-  }: { limit: number; windowMs: number; keyPrefix: string }
+    keySuffix,
+  }: { limit: number; windowMs: number; keyPrefix: string; keySuffix?: string }
 ): RateLimitResult {
   const now = Date.now();
   const ip = getClientIp(request);
-  const key = `${keyPrefix}:${ip}`;
+  const key = `${keyPrefix}:${keySuffix ?? ip}`;
   const existing = store.get(key);
 
   if (!existing || now >= existing.resetAt) {

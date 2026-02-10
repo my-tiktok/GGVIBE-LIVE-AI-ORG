@@ -7,12 +7,20 @@ import { getRequestId } from "@/lib/observability/request-id";
 import { logMcpRequest } from "@/lib/observability/mcp-logger";
 import { validateRuntimeEnv } from "@/lib/env/validate";
 
+export const runtime = "nodejs";
+
 interface McpEndpoint {
   name: string;
   method: "GET" | "POST" | "STREAM";
   path: string;
   description: string;
   authentication?: string;
+}
+
+interface McpTool {
+  name: string;
+  description: string;
+  input_schema: Record<string, unknown>;
 }
 
 function buildResponseHeaders(
@@ -106,6 +114,52 @@ export async function GET(request: Request) {
     },
   ];
 
+  const tools: McpTool[] = [
+    {
+      name: "health_check",
+      description: "Verify service health and configuration status",
+      input_schema: {
+        type: "object",
+        properties: {},
+        additionalProperties: false,
+      },
+    },
+    {
+      name: "chat_stream",
+      description: "Start an SSE chat stream session (authenticated)",
+      input_schema: {
+        type: "object",
+        properties: {
+          prompt: { type: "string", description: "User prompt for the chat stream" },
+          maxTokens: {
+            type: "number",
+            description: "Optional token cap (must be <= server maximum)",
+          },
+        },
+        required: ["prompt"],
+        additionalProperties: true,
+      },
+    },
+    {
+      name: "current_user",
+      description: "Get the currently authenticated user profile",
+      input_schema: {
+        type: "object",
+        properties: {},
+        additionalProperties: false,
+      },
+    },
+    {
+      name: "login",
+      description: "Initiate OAuth login flow",
+      input_schema: {
+        type: "object",
+        properties: {},
+        additionalProperties: false,
+      },
+    },
+  ];
+
   const status = missingEnv.length > 0 ? "degraded" : "healthy";
   const response = NextResponse.json(
     {
@@ -115,6 +169,7 @@ export async function GET(request: Request) {
       description: "AI-powered chatbot application for OpenAI ChatGPT integration",
       baseUrl,
       endpoints,
+      tools,
       timestamp: new Date().toISOString(),
     },
     {
