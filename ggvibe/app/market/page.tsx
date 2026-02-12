@@ -26,9 +26,11 @@ export default function MarketPage() {
         throw new Error(payload.error || "Failed to fetch items");
       }
 
-      setItems(payload.items || []);
       if (payload.error) {
         console.error("market route returned soft error", payload.requestId, payload.error);
+        setError("Failed to fetch items. Please try again.");
+      } else {
+        setItems(payload.items || []);
       }
     } catch (err) {
       console.error("market load failed", err);
