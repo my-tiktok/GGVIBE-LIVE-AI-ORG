@@ -13,9 +13,8 @@ export async function GET() {
       requestId,
       checks: {
         session_secret: !!process.env.SESSION_SECRET,
-        database_url: !!process.env.DATABASE_URL,
-        oidc_client_id: !!process.env.OIDC_CLIENT_ID,
-        issuer_url: !!process.env.ISSUER_URL,
+        firebase_api_key: !!process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+        firebase_auth_domain: !!process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
         openai_api_key: !!process.env.OPENAI_API_KEY,
       },
       timestamp: new Date().toISOString(),

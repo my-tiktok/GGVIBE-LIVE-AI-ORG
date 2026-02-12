@@ -3,30 +3,27 @@ import { getSession } from "@/lib/session";
 import { generateRequestId } from "@/lib/request-id";
 import { jsonError } from "@/lib/http/api-response";
 import { rateLimit, rateLimitHeaders } from "@/lib/security/rate-limit";
+import { authCookieName, decodeAuthCookie } from "@/lib/security/session-cookie";
 
 
-function parseFirebaseUserCookie(request: Request) {
+function parseServerAuthCookie(request: Request) {
   const cookieHeader = request.headers.get("cookie") || "";
-  const match = cookieHeader.match(/(?:^|; )ggvibe_firebase_user=([^;]+)/);
+  const match = cookieHeader.match(new RegExp(`(?:^|; )${authCookieName()}=([^;]+)`));
   if (!match) {
     return null;
   }
 
-  try {
-    const parsed = JSON.parse(decodeURIComponent(match[1]));
-    if (!parsed?.uid) {
-      return null;
-    }
-
-    return {
-      id: parsed.uid,
-      email: parsed.email || null,
-      firstName: parsed.displayName || null,
-      profileImageUrl: parsed.photoURL || null,
-    };
-  } catch {
+  const parsed = decodeAuthCookie(match[1]);
+  if (!parsed) {
     return null;
   }
+
+  return {
+    id: parsed.uid,
+    email: parsed.email,
+    firstName: parsed.displayName || null,
+    profileImageUrl: null,
+  };
 }
 
 export async function GET(request: Request) {
@@ -61,7 +58,7 @@ export async function GET(request: Request) {
     const session = await getSession();
 
     if (!session.isLoggedIn) {
-      const firebaseUser = parseFirebaseUserCookie(request);
+      const firebaseUser = parseServerAuthCookie(request);
       if (firebaseUser) {
         return NextResponse.json(
           {

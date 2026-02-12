@@ -5,6 +5,7 @@ import {
   getLoginFailureState,
   recordFailedLoginAttempt,
 } from "@/lib/security/login-attempts";
+import { authCookieName, encodeAuthCookie } from "@/lib/security/session-cookie";
 
 const LIMIT = 10;
 const WINDOW_MS = 60_000;
@@ -90,7 +91,36 @@ export async function OPTIONS() {
 
 export async function POST(request: Request) {
   const requestId = generateRequestId();
-  const state = await getLoginFailureState(request, { limit: LIMIT, windowMs: WINDOW_MS });
+  let email = "";
+  let password = "";
+
+  try {
+    const body = (await request.json()) as { email?: string; password?: string };
+    email = body.email?.trim() || "";
+    password = body.password || "";
+  } catch {
+    const resetAt = Math.ceil((Date.now() + WINDOW_MS) / 1000);
+    return NextResponse.json(
+      {
+        error: "invalid_json",
+        message: "Request body must be JSON.",
+        requestId,
+      },
+      {
+        status: 400,
+        headers: rateHeaders(requestId, {
+          remaining: LIMIT,
+          resetAt,
+        }),
+      }
+    );
+  }
+
+  const state = await getLoginFailureState(request, {
+    limit: LIMIT,
+    windowMs: WINDOW_MS,
+    email,
+  });
 
   if (state.count >= LIMIT) {
     return NextResponse.json(
@@ -105,30 +135,6 @@ export async function POST(request: Request) {
           remaining: 0,
           resetAt: state.resetAt,
           retryAfter: state.retryAfter,
-        }),
-      }
-    );
-  }
-
-  let email = "";
-  let password = "";
-
-  try {
-    const body = (await request.json()) as { email?: string; password?: string };
-    email = body.email?.trim() || "";
-    password = body.password || "";
-  } catch {
-    return NextResponse.json(
-      {
-        error: "invalid_json",
-        message: "Request body must be JSON.",
-        requestId,
-      },
-      {
-        status: 400,
-        headers: rateHeaders(requestId, {
-          remaining: state.remaining,
-          resetAt: state.resetAt,
         }),
       }
     );
@@ -191,7 +197,7 @@ export async function POST(request: Request) {
       const errorCode = payload.error?.message;
 
       if (isInvalidCredentialError(errorCode)) {
-        const failedCount = await recordFailedLoginAttempt(request, { windowMs: WINDOW_MS });
+        const failedCount = await recordFailedLoginAttempt(request, { windowMs: WINDOW_MS, email });
         const remaining = Math.max(LIMIT - failedCount, 0);
         const retryAfter = failedCount >= LIMIT ? Math.ceil(WINDOW_MS / 1000) : undefined;
 
@@ -229,7 +235,7 @@ export async function POST(request: Request) {
       );
     }
 
-    await clearFailedLoginAttempts(request);
+    await clearFailedLoginAttempts(request, email);
 
     const response = NextResponse.json(
       {
@@ -250,12 +256,30 @@ export async function POST(request: Request) {
       }
     );
 
-    response.cookies.set("ggvibe_firebase_user", encodeURIComponent(JSON.stringify({
-      uid: payload.localId,
+    const cookieValue = encodeAuthCookie({
+      uid: payload.localId || "",
       email: payload.email || email,
       displayName: payload.displayName || "",
-      photoURL: "",
-    })), {
+    });
+
+    if (!cookieValue) {
+      return NextResponse.json(
+        {
+          error: "server_misconfigured",
+          message: "SESSION_SECRET must be set to at least 32 characters.",
+          requestId,
+        },
+        {
+          status: 500,
+          headers: rateHeaders(requestId, {
+            remaining: LIMIT,
+            resetAt: Math.ceil((Date.now() + WINDOW_MS) / 1000),
+          }),
+        }
+      );
+    }
+
+    response.cookies.set(authCookieName(), cookieValue, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",

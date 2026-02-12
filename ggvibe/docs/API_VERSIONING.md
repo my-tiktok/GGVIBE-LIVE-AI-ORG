@@ -56,8 +56,8 @@ Use this for debugging and support requests.
 
 The following endpoints are **not versioned** (auth flow):
 - `/api/login` - Initiates OAuth
-- `/api/callback` - OAuth callback
-- `/api/logout` - Logout
+- `/api/login` - Email/password login
+- `/api/auth/user` - Authenticated user lookup
 
 These endpoints redirect rather than return JSON.
 

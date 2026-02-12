@@ -4,7 +4,7 @@ import PayoutsClientPage from "./payouts-client";
 
 export default async function PayoutsPage() {
   const cookieStore = await cookies();
-  const userCookie = cookieStore.get("ggvibe_firebase_user")?.value;
+  const userCookie = cookieStore.get("ggvibe_auth")?.value;
 
   if (!userCookie) {
     redirect("/login");

@@ -42,49 +42,6 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-function cookieDomainFromAppUrl() {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
-  if (!appUrl) {
-    return "";
-  }
-
-  try {
-    const { hostname } = new URL(appUrl);
-    if (hostname === "localhost" || /^\d+\.\d+\.\d+\.\d+$/.test(hostname)) {
-      return "";
-    }
-
-    return `; Domain=${hostname}`;
-  } catch {
-    return "";
-  }
-}
-
-function syncClientAuthCookie(user: User | null) {
-  if (typeof document === "undefined") {
-    return;
-  }
-
-  const secure = window.location.protocol === "https:" ? "; Secure" : "";
-  const domain = cookieDomainFromAppUrl();
-
-  if (!user) {
-    document.cookie = `ggvibe_firebase_user=; Path=/; Max-Age=0; SameSite=Lax${secure}${domain}`;
-    return;
-  }
-
-  const payload = encodeURIComponent(
-    JSON.stringify({
-      uid: user.uid,
-      email: user.email || "",
-      displayName: user.displayName || "",
-      photoURL: user.photoURL || "",
-    })
-  );
-
-  document.cookie = `ggvibe_firebase_user=${payload}; Path=/; Max-Age=604800; SameSite=Lax${secure}${domain}`;
-}
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -95,7 +52,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const auth = getFirebaseAuth();
     const unsubscribe = onAuthStateChanged(auth, (nextUser) => {
       setUser(nextUser);
-      syncClientAuthCookie(nextUser);
       setLoading(false);
     });
 

@@ -32,9 +32,6 @@ export function getBaseUrl(request?: Request, headersList?: Headers): string {
   return `http://localhost:${port}`;
 }
 
-export function getCallbackUrl(): string {
-  return `${getCanonicalUrl()}/api/callback`;
-}
 
 export function isCanonicalHost(request: Request): boolean {
   const canonical = getCanonicalUrl();

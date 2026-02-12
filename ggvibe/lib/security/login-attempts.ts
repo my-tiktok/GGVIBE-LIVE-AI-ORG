@@ -21,8 +21,9 @@ function clientIp(request: Request) {
   return forwarded?.split(",")[0]?.trim() || "unknown";
 }
 
-function keyForRequest(request: Request) {
-  return `login_fail:${clientIp(request)}`;
+function keyForRequest(request: Request, email?: string) {
+  const normalizedEmail = (email || "").trim().toLowerCase();
+  return `login_fail:${clientIp(request)}:${normalizedEmail || "anon"}`;
 }
 
 function windowState(windowMs: number): AttemptState {
@@ -125,9 +126,9 @@ function clearFailuresMemory(key: string): void {
 
 export async function getLoginFailureState(
   request: Request,
-  { limit, windowMs }: { limit: number; windowMs: number }
+  { limit, windowMs, email }: { limit: number; windowMs: number; email?: string }
 ): Promise<AttemptResult> {
-  const key = keyForRequest(request);
+  const key = keyForRequest(request, email);
   const failures =
     (await getFailuresFromRedis(key)) ?? getFailureCountMemory(key, windowMs);
   const retryAfter = Math.max(Math.ceil(windowMs / 1000), 1);
@@ -142,9 +143,9 @@ export async function getLoginFailureState(
 
 export async function recordFailedLoginAttempt(
   request: Request,
-  { windowMs }: { windowMs: number }
+  { windowMs, email }: { windowMs: number; email?: string }
 ): Promise<number> {
-  const key = keyForRequest(request);
+  const key = keyForRequest(request, email);
   const windowSeconds = Math.max(Math.ceil(windowMs / 1000), 1);
 
   const fromRedis = await incrementFailureRedis(key, windowSeconds);
@@ -155,8 +156,8 @@ export async function recordFailedLoginAttempt(
   return incrementFailureMemory(key, windowMs);
 }
 
-export async function clearFailedLoginAttempts(request: Request): Promise<void> {
-  const key = keyForRequest(request);
+export async function clearFailedLoginAttempts(request: Request, email?: string): Promise<void> {
+  const key = keyForRequest(request, email);
   await clearFailuresRedis(key);
   clearFailuresMemory(key);
 }

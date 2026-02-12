@@ -15,9 +15,8 @@ export async function GET(request: Request) {
   
   const checks = {
     session_secret: !!process.env.SESSION_SECRET || !!process.env.NEXTAUTH_SECRET,
-    database_url: !!process.env.DATABASE_URL,
-    oidc_client_id: !!process.env.OIDC_CLIENT_ID,
-    issuer_url: !!process.env.ISSUER_URL,
+    firebase_api_key: !!process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+    firebase_auth_domain: !!process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
   };
 
   const allHealthy = Object.values(checks).every(Boolean);

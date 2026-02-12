@@ -73,7 +73,6 @@ function mapAuthError(error: unknown) {
 export default function LoginPage() {
   const router = useRouter();
   const {
-    signInWithEmail,
     signInWithGoogle,
     signInWithGithub,
     signInWithPhone,
@@ -106,9 +105,30 @@ export default function LoginPage() {
 
   const handleEmailLogin = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    await withHandling(async () => {
-      await signInWithEmail(email, password);
-    });
+    setLoading(true);
+    setError(null);
+    setInfo(null);
+
+    try {
+      const response = await fetch("/api/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const payload = (await response.json()) as { error?: string; message?: string };
+      if (!response.ok) {
+        throw new Error(payload.message || payload.error || "Authentication failed.");
+      }
+
+      router.push("/");
+    } catch (err) {
+      setError((err as Error).message || "Authentication failed.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handlePhoneStart = async () => {

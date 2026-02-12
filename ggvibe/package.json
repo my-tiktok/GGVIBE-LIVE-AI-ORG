@@ -18,7 +18,6 @@
     "iron-session": "^8.0.4",
     "memoizee": "^0.4.17",
     "next": "15.5.12",
-    "openid-client": "^6.8.1",
     "postgres": "^3.4.8",
     "react": "19.0.0",
     "react-dom": "19.0.0",
