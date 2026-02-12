@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Analytics } from '@vercel/analytics/next'
 
 export const metadata: Metadata = {
   title: 'GGVIBE LIVE AI - Your AI-Powered Chat Assistant',
@@ -26,6 +27,7 @@ export default function RootLayout({
     <html lang="en">
       <body style={{ margin: 0, fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
         {children}
+        <Analytics />
       </body>
     </html>
   )
