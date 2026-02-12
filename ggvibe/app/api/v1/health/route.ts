@@ -14,7 +14,8 @@ export async function GET() {
       checks: {
         session_secret: !!process.env.SESSION_SECRET,
         database_url: !!process.env.DATABASE_URL,
-        repl_id: !!process.env.REPL_ID,
+        oidc_client_id: !!process.env.OIDC_CLIENT_ID,
+        issuer_url: !!process.env.ISSUER_URL,
         openai_api_key: !!process.env.OPENAI_API_KEY,
       },
       timestamp: new Date().toISOString(),

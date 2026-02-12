@@ -7,6 +7,31 @@ import { generateRequestId } from "@/lib/request-id";
 import { jsonError } from "@/lib/http/api-response";
 import { rateLimit, rateLimitHeaders } from "@/lib/security/rate-limit";
 
+
+function parseFirebaseUserCookie(request: Request) {
+  const cookieHeader = request.headers.get("cookie") || "";
+  const match = cookieHeader.match(/(?:^|; )ggvibe_firebase_user=([^;]+)/);
+  if (!match) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(decodeURIComponent(match[1]));
+    if (!parsed?.uid) {
+      return null;
+    }
+
+    return {
+      id: parsed.uid,
+      email: parsed.email || null,
+      firstName: parsed.displayName || null,
+      profileImageUrl: parsed.photoURL || null,
+    };
+  } catch {
+    return null;
+  }
+}
+
 const headers = (requestId: string) => ({
   "X-Request-Id": requestId,
   "Cache-Control": "no-cache, no-store, must-revalidate",
@@ -39,6 +64,14 @@ export async function GET(request: Request) {
     const session = await getSession();
     
     if (!session.isLoggedIn || !session.userId) {
+      const firebaseUser = parseFirebaseUserCookie(request);
+      if (firebaseUser) {
+        return NextResponse.json(
+          { authenticated: true, user: firebaseUser, requestId },
+          { headers: combinedHeaders }
+        );
+      }
+
       return jsonError(
         {
           error: "unauthorized",

@@ -14,14 +14,14 @@ import { rateLimit, rateLimitHeaders } from "@/lib/security/rate-limit";
 const getOidcConfig = memoize(
   async () => {
     return await client.discovery(
-      new URL(process.env.ISSUER_URL ?? "https://replit.com/oidc"),
-      process.env.REPL_ID!
+      new URL(process.env.ISSUER_URL ?? "https://oidc.example.com"),
+      process.env.OIDC_CLIENT_ID!
     );
   },
   { maxAge: 3600 * 1000 }
 );
 
-interface ReplitClaims {
+interface OidcClaims {
   sub: string;
   email?: string;
   first_name?: string;
@@ -121,7 +121,7 @@ export async function GET(request: Request) {
       expectedState: savedState,
     });
 
-    const claims = tokens.claims() as ReplitClaims;
+    const claims = tokens.claims() as OidcClaims;
 
     if (!claims?.sub) {
       console.error(`[${requestId}] Invalid claims: missing sub`);

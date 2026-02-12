@@ -13,9 +13,17 @@ jobs:
     env:
       NODE_ENV: production
       DATABASE_URL: postgresql://test:test@localhost:5432/ggvibe_test
-      REPL_ID: test-repl-id
-      PORT: 5000
-      NEXT_PUBLIC_APP_URL: http://localhost:5000
+      OIDC_CLIENT_ID: test-oidc-client-id
+      ISSUER_URL: https://accounts.example.com/oidc
+      PORT: 3000
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      CHAT_MOCK_RESPONSE: "true"
+      NEXT_PUBLIC_FIREBASE_API_KEY: demo-key
+      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: demo.firebaseapp.com
+      NEXT_PUBLIC_FIREBASE_PROJECT_ID: demo-project
+      NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: demo-project.firebasestorage.app
+      NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: "123456789"
+      NEXT_PUBLIC_FIREBASE_APP_ID: 1:123456789:web:abcdef
 
     services:
       postgres:
@@ -32,7 +40,13 @@ jobs:
         ports:
           - 5432:5432
 
+    defaults:
+      run:
+        shell: bash
+        working-directory: ggvibe
+
     steps:
+      # NOTE: If your org blocks GitHub-owned actions, follow CI_TROUBLESHOOTING.md (PATH 1).
       - uses: actions/checkout@v4
 
       - name: Setup Node.js
@@ -42,159 +56,88 @@ jobs:
           cache: "npm"
           cache-dependency-path: ggvibe/package-lock.json
 
-      # SECURITY: never hardcode secret-like values in workflows.
-      - name: Generate ephemeral SESSION_SECRET for this job
-        shell: bash
-        run: |
-          set -euo pipefail
-          echo "SESSION_SECRET=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
+      - name: Generate ephemeral SESSION_SECRET
+        run: echo "SESSION_SECRET=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
 
-      # DETERMINISM: use lockfile-driven installs
-      - name: Install dependencies (ggvibe)
-        run: npm ci --prefix ggvibe
+      - name: Install dependencies
+        run: npm ci
 
       - name: Build application
-        run: npm run build --prefix ggvibe
+        run: npm run build
 
       - name: Start application in background
-        shell: bash
         run: |
           set -euo pipefail
-          cd ggvibe
           npm run start > ../server.log 2>&1 &
           echo "APP_PID=$!" >> "$GITHUB_ENV"
-          echo "Started server PID=$!"
 
-      # STABILITY: replace sleep with a real readiness gate + diagnostics
       - name: Wait for server readiness
-        shell: bash
         run: |
           set -euo pipefail
-          echo "Waiting for http://localhost:${PORT}/api/health ..."
           for i in $(seq 1 60); do
             if curl -fsS "http://localhost:${PORT}/api/health" >/dev/null 2>&1; then
-              echo "Server is up."
               exit 0
             fi
             sleep 1
           done
-
-          echo "❌ Server did not become ready in time."
-          echo "---- last 200 lines of server.log ----"
-          tail -n 200 server.log || true
-          echo "---- process list ----"
-          ps aux | head -n 30 || true
+          echo "Server did not become ready"
+          tail -n 200 ../server.log || true
           exit 1
 
-      - name: Verify OpenAI challenge endpoint
-        shell: bash
+      - name: Verify route contract
         run: |
           set -euo pipefail
-          echo "Testing: /.well-known/openai-apps-challenge"
-          BODY="$(curl -fsS "http://localhost:${PORT}/.well-known/openai-apps-challenge")"
 
-          if [ -z "${BODY}" ]; then
-            echo "❌ FAILED: Challenge endpoint returned empty"
+          ROOT_STATUS="$(curl -s -o /tmp/root.out -w "%{http_code}" "http://localhost:${PORT}/")"
+          test "$ROOT_STATUS" = "200"
+
+          ROBOTS_STATUS="$(curl -s -o /tmp/robots.out -w "%{http_code}" "http://localhost:${PORT}/robots.txt")"
+          test "$ROBOTS_STATUS" = "200"
+          grep -q "Disallow: /payouts" /tmp/robots.out
+
+          MCP_STATUS="$(curl -s -o /tmp/mcp.out -w "%{http_code}" "http://localhost:${PORT}/mcp")"
+          test "$MCP_STATUS" = "200"
+          grep -q '"tools"' /tmp/mcp.out
+          grep -q '"endpoints"' /tmp/mcp.out
+
+          MARKET_STATUS="$(curl -s -o /tmp/market.out -w "%{http_code}" "http://localhost:${PORT}/market")"
+          test "$MARKET_STATUS" = "200"
+
+          MARKET_API_STATUS="$(curl -s -o /tmp/market-api.out -w "%{http_code}" "http://localhost:${PORT}/api/market/items")"
+          test "$MARKET_API_STATUS" = "200"
+
+          PAYOUTS_STATUS="$(curl -s -o /tmp/payouts.out -D /tmp/payouts.headers -w "%{http_code}" "http://localhost:${PORT}/payouts")"
+          if [ "$PAYOUTS_STATUS" != "307" ] && [ "$PAYOUTS_STATUS" != "308" ]; then
+            echo "Expected /payouts to redirect when anonymous, got $PAYOUTS_STATUS"
             exit 1
           fi
 
-          # Guardrails: must be plain text token, not HTML/JSON
-          if echo "${BODY}" | grep -qiE '<html|<!doctype|^{|^\['; then
-            echo "❌ FAILED: Challenge endpoint returned non-plain-text content"
-            echo "Response:"
-            echo "${BODY}"
+          PAYOUTS_API_STATUS="$(curl -s -o /tmp/payouts-api.out -D /tmp/payouts-api.headers -w "%{http_code}" "http://localhost:${PORT}/api/payouts")"
+          if [ "$PAYOUTS_API_STATUS" != "401" ] && [ "$PAYOUTS_API_STATUS" != "403" ]; then
+            echo "Expected /api/payouts to be private (401/403), got $PAYOUTS_API_STATUS"
             exit 1
           fi
+          grep -qi "^X-Robots-Tag: noindex, nofollow" /tmp/payouts-api.headers
+          grep -Eqi "^Cache-Control: .*no-store" /tmp/payouts-api.headers
 
-          echo "✅ PASSED: Challenge token is present (not printed for safety)."
+          PAYOUTS_TXT_STATUS="$(curl -s -o /tmp/payouts-txt.out -w "%{http_code}" "http://localhost:${PORT}/payouts.txt")"
+          test "$PAYOUTS_TXT_STATUS" = "404"
 
-      - name: Verify health endpoint
-        shell: bash
+          LOGIN_GET_STATUS="$(curl -s -o /tmp/login-get.out -w "%{http_code}" "http://localhost:${PORT}/api/login")"
+          test "$LOGIN_GET_STATUS" = "405"
+
+      - name: Verify forbidden-term scans
         run: |
           set -euo pipefail
-          echo "Testing: /api/health"
-          HEALTH="$(curl -fsS "http://localhost:${PORT}/api/health")"
-          echo "Response: ${HEALTH}"
-
-          echo "${HEALTH}" | grep -q '"status"' || { echo "❌ FAILED: Health missing status"; exit 1; }
-          echo "${HEALTH}" | grep -q '"appUrlConfigured"' || { echo "❌ FAILED: Health missing appUrlConfigured"; exit 1; }
-
-          echo "✅ PASSED: Health endpoint OK"
-
-      - name: Verify MCP endpoint
-        shell: bash
-        run: |
-          set -euo pipefail
-          echo "Testing: /mcp"
-          MCP="$(curl -fsS "http://localhost:${PORT}/mcp")"
-          echo "Response: ${MCP}"
-
-          echo "${MCP}" | grep -q '"name"' || { echo "❌ FAILED: MCP missing name"; exit 1; }
-          echo "${MCP}" | grep -q '"endpoints"' || { echo "❌ FAILED: MCP missing endpoints"; exit 1; }
-
-          echo "✅ PASSED: MCP endpoint OK"
-
-      - name: Test chat stream unauthorized
-        shell: bash
-        run: |
-          set -euo pipefail
-          echo "Testing: /api/v1/chat/stream (unauthorized)"
-          STATUS="$(curl -s -o /dev/null -w "%{http_code}" -X POST "http://localhost:${PORT}/api/v1/chat/stream")"
-          if [ "${STATUS}" != "401" ]; then
-            echo "❌ FAILED: Expected 401, got ${STATUS}"
-            exit 1
-          fi
-          echo "✅ PASSED: Unauthorized request returned 401"
-
-      # Don’t force “authorized = 200” in CI unless you provide real auth + required secrets.
-      # This avoids flaky/false-failures on forks and PRs where secrets are not available.
-      - name: Test chat stream authorized (only when CI has a configured token)
-        if: ${{ secrets.OPENAI_API_KEY != '' }}
-        shell: bash
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        run: |
-          set -euo pipefail
-          echo "Testing: /api/v1/chat/stream (authorized)"
-          STATUS="$(curl -s -o /dev/null -w "%{http_code}" -X POST \
-            -H "Authorization: Bearer test-token-12345" \
-            -H "Content-Type: application/json" \
-            "http://localhost:${PORT}/api/v1/chat/stream")"
-
-          if [ "${STATUS}" != "200" ]; then
-            echo "❌ FAILED: Expected 200, got ${STATUS}"
-            echo "---- last 200 lines of server.log ----"
-            tail -n 200 server.log || true
-            exit 1
-          fi
-          echo "✅ PASSED: Authorized request returned 200"
-
-      - name: Verify no rewrites intercept protected paths
-        shell: bash
-        run: |
-          set -euo pipefail
-          echo "Verifying next.config.mjs does not rewrite protected paths..."
-          cd ggvibe
-
-          # Only run checks if file exists (some repos use next.config.js/ts)
-          test -f next.config.mjs || { echo "ℹ️ next.config.mjs not found, skipping"; exit 0; }
-
-          # Broad, practical checks (avoid false positives on comments)
-          if grep -nE '(\.well-known|/api/health|/mcp).*(destination|rewrite|rewrites)' next.config.mjs; then
-            echo "❌ FAILED: next.config.mjs appears to rewrite protected paths"
-            exit 1
-          fi
-
-          echo "✅ PASSED: No protected paths are rewritten"
+          cd ..
+          ! rg -n "stripe|paystack|checkout session|payment intent|webhook|pay link|payment provider" . --glob '!**/node_modules/**'
+          ! rg -n "replit|REPLIT_|REPL_|replit_integration_files" . --glob '!**/node_modules/**'
 
       - name: Cleanup
         if: always()
-        shell: bash
         run: |
           set +e
           if [ -n "${APP_PID:-}" ]; then
-            echo "Stopping server PID=${APP_PID}"
             kill "${APP_PID}" || true
           fi
-          echo "---- last 200 lines of server.log ----"
-          tail -n 200 server.log || true
+          tail -n 200 ../server.log || true

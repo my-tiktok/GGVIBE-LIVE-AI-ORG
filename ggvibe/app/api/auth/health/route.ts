@@ -16,7 +16,8 @@ export async function GET(request: Request) {
   const checks = {
     session_secret: !!process.env.SESSION_SECRET || !!process.env.NEXTAUTH_SECRET,
     database_url: !!process.env.DATABASE_URL,
-    repl_id: !!process.env.REPL_ID,
+    oidc_client_id: !!process.env.OIDC_CLIENT_ID,
+    issuer_url: !!process.env.ISSUER_URL,
   };
 
   const allHealthy = Object.values(checks).every(Boolean);

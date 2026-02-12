@@ -9,23 +9,10 @@ function buildAllowedOrigins(): Set<string> {
     origins.add(process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, ""));
   }
 
-  if (process.env.REPLIT_DEPLOYMENT_URL) {
-    const url = process.env.REPLIT_DEPLOYMENT_URL;
-    origins.add(url.startsWith("http") ? url.replace(/\/$/, "") : `https://${url}`);
-  }
-
-  if (process.env.REPLIT_DEV_DOMAIN) {
-    const domain = process.env.REPLIT_DEV_DOMAIN.replace(/\/$/, "");
-    origins.add(domain);
-    origins.add(domain.startsWith("http") ? domain : `https://${domain}`);
-  }
-
-  if (process.env.REPLIT_DOMAINS) {
-    process.env.REPLIT_DOMAINS.split(",").forEach((domain) => {
-      const trimmed = domain.trim();
-      if (trimmed) {
-        origins.add(`https://${trimmed}`);
-      }
+  if (process.env.ALLOWED_CORS_ORIGINS) {
+    process.env.ALLOWED_CORS_ORIGINS.split(",").forEach((origin) => {
+      const trimmed = origin.trim().replace(/\/$/, "");
+      if (trimmed) origins.add(trimmed);
     });
   }
 
@@ -38,7 +25,7 @@ export function buildCorsHeaders(request: Request, requestId: string): CorsResul
     "Access-Control-Allow-Methods": "GET,OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Request-Id",
     "Access-Control-Max-Age": "600",
-    "Vary": "Origin",
+    Vary: "Origin",
     "X-Request-Id": requestId,
   });
 

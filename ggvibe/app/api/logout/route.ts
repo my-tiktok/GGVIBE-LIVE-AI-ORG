@@ -11,8 +11,8 @@ import { rateLimit, rateLimitHeaders } from "@/lib/security/rate-limit";
 const getOidcConfig = memoize(
   async () => {
     return await client.discovery(
-      new URL(process.env.ISSUER_URL ?? "https://replit.com/oidc"),
-      process.env.REPL_ID!
+      new URL(process.env.ISSUER_URL ?? "https://oidc.example.com"),
+      process.env.OIDC_CLIENT_ID!
     );
   },
   { maxAge: 3600 * 1000 }
@@ -48,7 +48,7 @@ export async function GET(request: Request) {
     
     const config = await getOidcConfig();
     const logoutUrl = client.buildEndSessionUrl(config, {
-      client_id: process.env.REPL_ID!,
+      client_id: process.env.OIDC_CLIENT_ID!,
       post_logout_redirect_uri: baseUrl,
     });
     const response = NextResponse.redirect(logoutUrl.href);

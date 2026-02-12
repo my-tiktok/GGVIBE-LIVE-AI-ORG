@@ -1,0 +1,7 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "installCommand": "cd ggvibe && npm ci",
+  "buildCommand": "cd ggvibe && npm run build",
+  "outputDirectory": "ggvibe/.next"
+}

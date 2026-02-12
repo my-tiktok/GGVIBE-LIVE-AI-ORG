@@ -1,188 +1,222 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
-import { Suspense } from "react";
+import Link from "next/link";
+import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useFirebaseAuth } from "@/components/auth/auth-provider";
 
-const ERROR_MESSAGES: Record<string, string> = {
-  invalid_callback: "Login session expired or was invalid. Please try again.",
-  provider_error: "Authentication provider returned an error. Please try again.",
-  invalid_claims: "Could not retrieve your profile information. Please try again.",
-  auth_failed: "Authentication failed. Please try again.",
-  login_failed: "Could not initiate login. Please try again.",
-  unauthorized: "You must be logged in to access that page.",
-};
-
-const styles = {
-  container: {
+const styles: Record<string, React.CSSProperties> = {
+  page: {
     minHeight: "100vh",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
-    padding: "1rem",
-  } as React.CSSProperties,
+    background: "#0f172a",
+    color: "#fff",
+    padding: "2rem 1rem",
+  },
   card: {
-    textAlign: "center" as const,
-    padding: "2rem",
-    backgroundColor: "rgba(30, 41, 59, 0.5)",
-    borderRadius: "1rem",
-    border: "1px solid #334155",
-    maxWidth: "24rem",
     width: "100%",
-  } as React.CSSProperties,
-  errorBox: {
-    marginBottom: "1.5rem",
-    padding: "1rem",
-    backgroundColor: "rgba(239, 68, 68, 0.1)",
-    border: "1px solid rgba(239, 68, 68, 0.3)",
-    borderRadius: "0.5rem",
-  } as React.CSSProperties,
-  errorIcon: {
-    width: "3rem",
-    height: "3rem",
-    backgroundColor: "rgba(239, 68, 68, 0.2)",
-    borderRadius: "50%",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    margin: "0 auto 0.75rem",
-  } as React.CSSProperties,
-  errorText: {
-    color: "#fca5a5",
-    fontSize: "0.875rem",
-    margin: 0,
-  } as React.CSSProperties,
-  title: {
-    fontSize: "1.5rem",
-    fontWeight: "bold",
-    color: "#ffffff",
-    marginBottom: "0.5rem",
-  } as React.CSSProperties,
-  subtitle: {
-    color: "#94a3b8",
-    marginBottom: "1.5rem",
-  } as React.CSSProperties,
+    maxWidth: "420px",
+    background: "#111827",
+    borderRadius: "12px",
+    padding: "1.5rem",
+    border: "1px solid #374151",
+  },
+  input: {
+    width: "100%",
+    padding: "0.7rem",
+    borderRadius: "8px",
+    border: "1px solid #4b5563",
+    background: "#1f2937",
+    color: "#fff",
+    marginBottom: "0.75rem",
+  },
   button: {
     width: "100%",
-    padding: "0.75rem 1.5rem",
-    backgroundColor: "#2563eb",
-    color: "#ffffff",
-    fontWeight: 500,
-    borderRadius: "0.5rem",
+    padding: "0.75rem",
+    borderRadius: "8px",
     border: "none",
+    background: "#2563eb",
+    color: "white",
     cursor: "pointer",
-    fontSize: "1rem",
-    marginBottom: "0.75rem",
-  } as React.CSSProperties,
-  secondaryButton: {
-    width: "100%",
-    padding: "0.75rem 1.5rem",
-    backgroundColor: "#334155",
-    color: "#cbd5e1",
-    fontWeight: 500,
-    borderRadius: "0.5rem",
-    border: "none",
-    cursor: "pointer",
-    fontSize: "1rem",
-  } as React.CSSProperties,
-  footer: {
-    marginTop: "1.5rem",
-    fontSize: "0.75rem",
-    color: "#64748b",
-  } as React.CSSProperties,
-  link: {
-    color: "#60a5fa",
-    textDecoration: "none",
-  } as React.CSSProperties,
+    marginBottom: "0.5rem",
+  },
+  secondary: {
+    background: "#374151",
+  },
+  divider: {
+    margin: "1rem 0",
+    borderTop: "1px solid #374151",
+  },
+  error: { color: "#fca5a5", marginBottom: "0.75rem" },
+  helper: { color: "#9ca3af", fontSize: "0.9rem" },
 };
 
-function LoginContent() {
-  const searchParams = useSearchParams();
-  const errorCode = searchParams.get("error");
-  const deepLinkScheme = process.env.NEXT_PUBLIC_MOBILE_DEEP_LINK_SCHEME;
-
-  const errorMessage = errorCode
-    ? ERROR_MESSAGES[errorCode] || "An error occurred. Please try again."
-    : null;
-
-  const handleLogin = () => {
-    window.location.href = "/api/login";
-  };
-
-  const handleDeepLinkError = () => {
-    if (deepLinkScheme && errorCode) {
-      window.location.href = `${deepLinkScheme}/error?code=${errorCode}`;
-    }
-  };
-
-  return (
-    <div style={styles.container}>
-      <div style={styles.card}>
-        {errorMessage && (
-          <div style={styles.errorBox}>
-            <div style={styles.errorIcon}>
-              <svg
-                style={{ width: "1.5rem", height: "1.5rem", color: "#f87171" }}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                />
-              </svg>
-            </div>
-            <p style={styles.errorText}>{errorMessage}</p>
-          </div>
-        )}
-
-        <h1 style={styles.title}>
-          {errorMessage ? "Login Failed" : "Welcome Back"}
-        </h1>
-        <p style={styles.subtitle}>
-          {errorMessage
-            ? "Please try logging in again."
-            : "Sign in to continue to GGVIBE LIVE AI"}
-        </p>
-
-        <button onClick={handleLogin} style={styles.button}>
-          {errorMessage ? "Try Again" : "Sign in with Replit"}
-        </button>
-
-        {deepLinkScheme && errorCode && (
-          <button onClick={handleDeepLinkError} style={styles.secondaryButton}>
-            Return to App
-          </button>
-        )}
-
-        <p style={styles.footer}>
-          By signing in, you agree to our{" "}
-          <a href="/terms" style={styles.link}>
-            Terms of Service
-          </a>{" "}
-          and{" "}
-          <a href="/privacy" style={styles.link}>
-            Privacy Policy
-          </a>
-        </p>
-      </div>
-    </div>
-  );
+function mapAuthError(error: unknown) {
+  const code = (error as { code?: string; message?: string })?.code;
+  switch (code) {
+    case "auth/invalid-credential":
+    case "auth/wrong-password":
+      return "Incorrect email or password.";
+    case "auth/user-not-found":
+      return "No account found for this email.";
+    case "auth/too-many-requests":
+      return "Too many attempts. Please wait and try again.";
+    case "auth/popup-closed-by-user":
+      return "The sign-in popup was closed before completing authentication.";
+    default:
+      return (error as { message?: string })?.message || "Authentication failed.";
+  }
 }
 
 export default function LoginPage() {
+  const router = useRouter();
+  const {
+    signInWithEmail,
+    signInWithGoogle,
+    signInWithGithub,
+    signInWithPhone,
+    verifyPhoneOtp,
+  } = useFirebaseAuth();
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [otpCode, setOtpCode] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
+
+  const withHandling = async (fn: () => Promise<void>) => {
+    setLoading(true);
+    setError(null);
+    setInfo(null);
+
+    try {
+      await fn();
+      router.push("/");
+    } catch (err) {
+      setError(mapAuthError(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEmailLogin = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    await withHandling(async () => {
+      await signInWithEmail(email, password);
+    });
+  };
+
+  const handlePhoneStart = async () => {
+    setLoading(true);
+    setError(null);
+    setInfo(null);
+    try {
+      await signInWithPhone(phoneNumber);
+      setOtpSent(true);
+      setInfo("We sent a verification code to your phone.");
+    } catch (err) {
+      setError(mapAuthError(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePhoneVerify = async () => {
+    await withHandling(async () => {
+      await verifyPhoneOtp(otpCode);
+    });
+  };
+
   return (
-    <Suspense
-      fallback={
-        <div style={styles.container}>
-          <div style={{ color: "#94a3b8" }}>Loading...</div>
-        </div>
-      }
-    >
-      <LoginContent />
-    </Suspense>
+    <main style={styles.page}>
+      <section style={styles.card}>
+        <h1>Sign in</h1>
+        <p style={styles.helper}>Use email/password, OAuth, or phone number.</p>
+        {error && <p style={styles.error}>{error}</p>}
+        {info && <p style={{ ...styles.helper, color: "#86efac" }}>{info}</p>}
+
+        <form onSubmit={handleEmailLogin}>
+          <input
+            style={styles.input}
+            type="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            placeholder="Email"
+            required
+          />
+          <input
+            style={styles.input}
+            type="password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            placeholder="Password"
+            required
+            minLength={8}
+          />
+          <button style={styles.button} type="submit" disabled={loading}>
+            {loading ? "Signing in..." : "Sign in with Email"}
+          </button>
+        </form>
+
+        <button
+          style={{ ...styles.button, ...styles.secondary }}
+          onClick={() => withHandling(signInWithGoogle)}
+          disabled={loading}
+        >
+          Continue with Google
+        </button>
+
+        <button
+          style={{ ...styles.button, ...styles.secondary }}
+          onClick={() => withHandling(signInWithGithub)}
+          disabled={loading}
+        >
+          Continue with GitHub
+        </button>
+
+        <div style={styles.divider} />
+        <input
+          style={styles.input}
+          type="tel"
+          value={phoneNumber}
+          onChange={(event) => setPhoneNumber(event.target.value)}
+          placeholder="Phone number (E.164, e.g. +15555550123)"
+        />
+        <button
+          style={{ ...styles.button, ...styles.secondary }}
+          onClick={handlePhoneStart}
+          disabled={loading || phoneNumber.length < 8}
+        >
+          Send SMS code
+        </button>
+
+        {otpSent && (
+          <>
+            <input
+              style={styles.input}
+              type="text"
+              value={otpCode}
+              onChange={(event) => setOtpCode(event.target.value)}
+              placeholder="Enter verification code"
+            />
+            <button style={styles.button} onClick={handlePhoneVerify} disabled={loading}>
+              Verify code
+            </button>
+          </>
+        )}
+
+        <p style={styles.helper}>
+          No account? <Link href="/signup">Create one</Link>
+        </p>
+        <p style={styles.helper}>
+          Forgot password? <Link href="/forgot">Reset it</Link>
+        </p>
+      </section>
+    </main>
   );
 }

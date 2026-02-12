@@ -1,15 +1,16 @@
 const REQUIRED_ENV_VARS = [
   "SESSION_SECRET",
   "DATABASE_URL",
-  "REPL_ID",
+  "OIDC_CLIENT_ID",
+  "ISSUER_URL",
 ] as const;
 
 const OPTIONAL_ENV_VARS = [
   "NEXT_PUBLIC_APP_URL",
   "NEXT_PUBLIC_MOBILE_DEEP_LINK_SCHEME",
-  "REPLIT_DEPLOYMENT_URL",
   "OPENAI_API_KEY",
   "CHAT_MOCK_RESPONSE",
+  "ALLOWED_CORS_ORIGINS",
 ] as const;
 
 export interface EnvValidationResult {
@@ -28,9 +29,9 @@ export function validateEnv(): EnvValidationResult {
     }
   }
 
-  if (!process.env.NEXT_PUBLIC_APP_URL && !process.env.REPLIT_DEPLOYMENT_URL) {
+  if (!process.env.NEXT_PUBLIC_APP_URL) {
     warnings.push(
-      "Neither NEXT_PUBLIC_APP_URL nor REPLIT_DEPLOYMENT_URL is set. OAuth redirects may fail in production."
+      "NEXT_PUBLIC_APP_URL is not set. OAuth redirects may fail in production."
     );
   }
 
@@ -64,3 +65,5 @@ export function isProduction(): boolean {
 export function getDeepLinkScheme(): string | undefined {
   return process.env.NEXT_PUBLIC_MOBILE_DEEP_LINK_SCHEME;
 }
+
+void OPTIONAL_ENV_VARS;

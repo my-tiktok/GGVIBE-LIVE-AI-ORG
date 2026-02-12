@@ -22,13 +22,6 @@ prisma/*.db-journal
 .vscode/
 .idea/
 
-# Replit
-.breakpoints
-.cache/
-.local/
-.upm/
-.pythonlibs/
-.config/
 
 # Build
 *.tsbuildinfo

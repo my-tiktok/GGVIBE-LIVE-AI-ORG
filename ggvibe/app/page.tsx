@@ -26,6 +26,8 @@ export default function HomePage() {
         <nav style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
           <a href="/privacy" style={{ color: 'rgba(255,255,255,0.8)', textDecoration: 'none' }}>Privacy</a>
           <a href="/terms" style={{ color: 'rgba(255,255,255,0.8)', textDecoration: 'none' }}>Terms</a>
+          <a href="/market" style={{ color: 'rgba(255,255,255,0.8)', textDecoration: 'none' }}>Market</a>
+          <a href="/payouts" style={{ color: 'rgba(255,255,255,0.8)', textDecoration: 'none' }}>Payouts</a>
           {isLoading ? (
             <span style={{ color: 'rgba(255,255,255,0.6)' }}>Loading...</span>
           ) : isAuthenticated ? (
@@ -60,7 +62,7 @@ export default function HomePage() {
               </button>
             </div>
           ) : (
-            <a href="/api/login" style={{
+            <a href="/login" style={{
               background: '#00d4ff',
               color: '#0f0f23',
               padding: '8px 20px',
@@ -132,7 +134,7 @@ export default function HomePage() {
               flexWrap: 'wrap',
               justifyContent: 'center',
             }}>
-              <a href="/api/login" style={{
+              <a href="/login" style={{
                 background: 'linear-gradient(90deg, #00d4ff, #7c3aed)',
                 color: 'white',
                 padding: '16px 40px',

@@ -3,14 +3,18 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -p ${PORT:-5000} -H 0.0.0.0",
+    "dev": "next dev -p ${PORT:-3000} -H 0.0.0.0",
     "build": "next build",
-    "start": "next start -p ${PORT:-5000} -H 0.0.0.0",
-    "lint": "next lint || true",
-    "db:push": "drizzle-kit push"
+    "start": "next start -p ${PORT:-3000} -H 0.0.0.0",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run typecheck && npm run test:unit",
+    "db:push": "drizzle-kit push",
+    "test:unit": "node --test tests/contracts.test.mjs"
   },
   "dependencies": {
     "drizzle-orm": "^0.45.1",
+    "firebase": "^11.1.0",
     "iron-session": "^8.0.4",
     "memoizee": "^0.4.17",
     "next": "15.5.12",
@@ -27,13 +31,13 @@
     "@types/react-dom": "19.0.2",
     "drizzle-kit": "^0.31.8",
     "eslint": "^9.39.2",
-    "eslint-config-next": "16.1.6",
+    "eslint-config-next": "15.5.12",
     "typescript": "5.7.3"
-  },
-  "eslint": {
-    "ignoreDuringBuilds": true
   },
   "engines": {
     "node": ">=20"
+  },
+  "optionalDependencies": {
+    "@next/swc-linux-x64-gnu": "15.5.12"
   }
 }

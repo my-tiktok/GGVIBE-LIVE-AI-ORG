@@ -8,24 +8,22 @@ const buildAllowedDevOrigins = () => {
   const origins = [
     "http://localhost:5000",
     "http://127.0.0.1:5000",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
     "http://localhost",
     "http://127.0.0.1",
     "https://ggvibe-chatgpt-ai.org",
     "https://www.ggvibe-chatgpt-ai.org",
-    "https://ggvibe-live-ai-1.replit.app",
   ];
 
-  if (process.env.REPLIT_DEV_DOMAIN) {
-    origins.push(
-      process.env.REPLIT_DEV_DOMAIN,
-      `https://${process.env.REPLIT_DEV_DOMAIN}`
-    );
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    origins.push(process.env.NEXT_PUBLIC_APP_URL);
   }
 
-  if (process.env.REPLIT_DOMAINS) {
-    process.env.REPLIT_DOMAINS.split(",").forEach((d) => {
-      const trimmed = d.trim();
-      if (trimmed) origins.push(`https://${trimmed}`);
+  if (process.env.ALLOWED_CORS_ORIGINS) {
+    process.env.ALLOWED_CORS_ORIGINS.split(",").forEach((origin) => {
+      const trimmed = origin.trim();
+      if (trimmed) origins.push(trimmed);
     });
   }
 
@@ -47,15 +45,6 @@ const nextConfig = {
     };
     return config;
   },
-
-  /**
-   * CRITICAL: Do NOT use rewrites/redirects/middleware for protected paths:
-   *   /.well-known/* must be file-backed (served from /public)
-   *   /api/health, /mcp must not be intercepted
-   * 
-   * File-backed routes are served directly by Next.js static handler,
-   * ensuring compatibility with all domains and avoiding redirect loops.
-   */
 
   async headers() {
     return [
@@ -106,7 +95,7 @@ const nextConfig = {
               "img-src 'self' data: blob: https:",
               "font-src 'self' data: https:",
               "connect-src 'self' https: wss:",
-              "frame-ancestors 'self' https://*.replit.dev https://*.replit.app https://*.repl.co",
+              "frame-ancestors 'self'",
               "base-uri 'self'",
               "form-action 'self'",
             ].join("; "),

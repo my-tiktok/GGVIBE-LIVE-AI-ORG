@@ -7,20 +7,35 @@ on:
       - main
 
 jobs:
-  build:
+  verify:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: ggvibe
     steps:
+      # NOTE: If your org blocks GitHub-owned actions, follow CI_TROUBLESHOOTING.md (PATH 1).
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: "npm"
           cache-dependency-path: ggvibe/package-lock.json
+
       - name: Install
-        working-directory: ggvibe
         run: npm ci --no-audit --no-fund
+
       - name: Lint
-        working-directory: ggvibe
         run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm run test
+
+      - name: Build
+        run: npm run build

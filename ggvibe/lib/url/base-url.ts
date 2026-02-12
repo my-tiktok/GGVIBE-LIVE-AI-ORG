@@ -11,12 +11,6 @@ export function getBaseUrl(request?: Request, headersList?: Headers): string {
     return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
   }
 
-  if (process.env.REPLIT_DEPLOYMENT_URL) {
-    const url = process.env.REPLIT_DEPLOYMENT_URL;
-    const normalized = url.startsWith("http") ? url : `https://${url}`;
-    return normalized.replace(/\/$/, "");
-  }
-
   if (headersList && isProduction()) {
     const forwardedHost = headersList.get("x-forwarded-host");
     const forwardedProto = headersList.get("x-forwarded-proto") || "https";
@@ -34,11 +28,11 @@ export function getBaseUrl(request?: Request, headersList?: Headers): string {
     return `${url.protocol}//${url.host}`;
   }
 
-  const port = process.env.PORT || "5000";
+  const port = process.env.PORT || "3000";
   return `http://localhost:${port}`;
 }
 
-export function getCallbackUrl(request?: Request, headersList?: Headers): string {
+export function getCallbackUrl(): string {
   return `${getCanonicalUrl()}/api/callback`;
 }
 
