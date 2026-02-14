@@ -1,0 +1,29 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    name: verify
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ggvibe
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: ggvibe/package-lock.json
+
+      - run: npm ci
+      - run: npm run lint --if-present
+      - run: npm run build
+      - run: npm run verify --if-present
