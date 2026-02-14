@@ -42,6 +42,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (!session.aiEnabled) {
+      return NextResponse.json(
+        { error: "upgrade_required", message: "AI access is not enabled for this account.", requestId },
+        { status: 403, headers: { "X-Request-Id": requestId } }
+      );
+    }
+
     const userRate = rateLimit(request, {
       limit: 20,
       windowMs: 60_000,

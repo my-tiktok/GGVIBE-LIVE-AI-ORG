@@ -1,4 +1,2 @@
 User-agent: *
-Allow: /
-
-Sitemap: https://ggvibe-chatgpt-ai.org/sitemap.xml
+Disallow: /payouts

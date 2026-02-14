@@ -12,6 +12,7 @@ export interface SessionData {
   accessToken?: string;
   expiresAt?: number;
   isLoggedIn: boolean;
+  aiEnabled?: boolean;
 }
 
 type SessionHandle = SessionData & {
@@ -61,6 +62,7 @@ function buildSessionOptions(secret: string): SessionOptions {
 
 export const defaultSession: SessionData = {
   isLoggedIn: false,
+  aiEnabled: false,
 };
 
 export async function getSession(): Promise<SessionHandle> {
@@ -81,6 +83,10 @@ export async function getSession(): Promise<SessionHandle> {
 
   if (!session.isLoggedIn) {
     session.isLoggedIn = false;
+  }
+
+  if (session.aiEnabled === undefined) {
+    session.aiEnabled = false;
   }
 
   return session as SessionHandle;
