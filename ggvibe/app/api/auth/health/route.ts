@@ -12,14 +12,16 @@ export async function GET(request: Request) {
   });
   const rateHeaders = rateLimitHeaders(rate);
   rateHeaders.set("X-Request-Id", requestId);
-  
+
   const checks = {
-    session_secret: !!process.env.SESSION_SECRET || !!process.env.NEXTAUTH_SECRET,
-    database_url: !!process.env.DATABASE_URL,
-    repl_id: !!process.env.REPL_ID,
+    nextauth_secret: !!process.env.NEXTAUTH_SECRET,
+    nextauth_url: !!process.env.NEXTAUTH_URL,
+    google_provider: !!process.env.GOOGLE_CLIENT_ID && !!process.env.GOOGLE_CLIENT_SECRET,
+    github_provider: !!process.env.GITHUB_CLIENT_ID && !!process.env.GITHUB_CLIENT_SECRET,
+    email_provider: !!process.env.EMAIL_SERVER && !!process.env.EMAIL_FROM,
   };
 
-  const allHealthy = Object.values(checks).every(Boolean);
+  const allHealthy = checks.nextauth_secret && checks.nextauth_url;
 
   if (!rate.allowed) {
     return jsonError(
@@ -40,9 +42,9 @@ export async function GET(request: Request) {
       checks,
       timestamp: new Date().toISOString(),
     },
-    { 
+    {
       status: allHealthy ? 200 : 503,
-      headers: rateHeaders
+      headers: rateHeaders,
     }
   );
 }

@@ -1,68 +1,132 @@
-import * as client from "openid-client";
-import memoize from "memoizee";
-import { db } from "./db";
-import { users, type UpsertUser } from "./schema";
-import { eq } from "drizzle-orm";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { randomUUID } from "crypto";
+import type { Adapter, AdapterAccount } from "next-auth/adapters";
+import type { NextAuthOptions } from "next-auth";
+import GoogleProvider from "next-auth/providers/google";
+import GitHubProvider from "next-auth/providers/github";
+import EmailProvider from "next-auth/providers/email";
 
-const getOidcConfig = memoize(
-  async () => {
-    return await client.discovery(
-      new URL(process.env.ISSUER_URL ?? "https://replit.com/oidc"),
-      process.env.REPL_ID!
-    );
-  },
-  { maxAge: 3600 * 1000 }
-);
+const canonicalUrl = process.env.NEXTAUTH_URL || "https://www.ggvibe-chatgpt-ai.org";
 
-export async function getAuthorizationUrl(redirectUri: string) {
-  const config = await getOidcConfig();
-  const codeVerifier = client.randomPKCECodeVerifier();
-  const codeChallenge = await client.calculatePKCECodeChallenge(codeVerifier);
-  const state = client.randomState();
-  
-  const authUrl = client.buildAuthorizationUrl(config, {
-    redirect_uri: redirectUri,
-    scope: "openid email profile",
-    code_challenge: codeChallenge,
-    code_challenge_method: "S256",
-    state,
-  });
-  
-  return { url: authUrl.href, codeVerifier, state };
+type MemorySession = {
+  sessionToken: string;
+  userId: string;
+  expires: Date;
+};
+
+type MemoryVerificationToken = {
+  identifier: string;
+  token: string;
+  expires: Date;
+};
+
+const users = new Map<string, any>();
+const usersByEmail = new Map<string, string>();
+const sessions = new Map<string, MemorySession>();
+const accounts = new Map<string, AdapterAccount>();
+const verificationTokens = new Map<string, MemoryVerificationToken>();
+
+const accountKey = (provider: string, providerAccountId: string) => `${provider}:${providerAccountId}`;
+const verificationKey = (identifier: string, token: string) => `${identifier}:${token}`;
+
+function createMemoryAdapter(): Adapter {
+  return {
+    async createUser(data: any) {
+      const user = { id: data.id ?? randomUUID(), ...data };
+      users.set(user.id, user);
+      if (user.email) usersByEmail.set(user.email, user.id);
+      return user;
+    },
+    async getUser(id: string) {
+      return users.get(id) ?? null;
+    },
+    async getUserByEmail(email: string) {
+      const id = usersByEmail.get(email);
+      return id ? users.get(id) ?? null : null;
+    },
+    async getUserByAccount({ provider, providerAccountId }: { provider: string; providerAccountId: string }) {
+      const acct = accounts.get(accountKey(provider, providerAccountId));
+      if (!acct) return null;
+      return users.get(acct.userId) ?? null;
+    },
+    async updateUser(data: any) {
+      if (!data.id) throw new Error("User id is required");
+      const existing = users.get(data.id);
+      if (!existing) throw new Error("User not found");
+      const updated = { ...existing, ...data };
+      users.set(data.id, updated);
+      if (updated.email) usersByEmail.set(updated.email, updated.id);
+      return updated;
+    },
+    async deleteUser(id: string) {
+      const user = users.get(id);
+      if (!user) return null;
+      users.delete(id);
+      if (user.email) usersByEmail.delete(user.email);
+      return user;
+    },
+    async linkAccount(account: AdapterAccount) {
+      accounts.set(accountKey(account.provider, account.providerAccountId), account);
+      return account;
+    },
+    async unlinkAccount({ provider, providerAccountId }: { provider: string; providerAccountId: string }) {
+      accounts.delete(accountKey(provider, providerAccountId));
+    },
+    async createSession(session: any) {
+      sessions.set(session.sessionToken, session);
+      return session;
+    },
+    async getSessionAndUser(sessionToken: string) {
+      const session = sessions.get(sessionToken);
+      if (!session) return null;
+      const user = users.get(session.userId);
+      if (!user) return null;
+      return { session, user };
+    },
+    async updateSession(session: any) {
+      sessions.set(session.sessionToken, session);
+      return session;
+    },
+    async deleteSession(sessionToken: string) {
+      sessions.delete(sessionToken);
+    },
+    async createVerificationToken(token: any) {
+      verificationTokens.set(verificationKey(token.identifier, token.token), token);
+      return token;
+    },
+    async useVerificationToken({ identifier, token }: { identifier: string; token: string }) {
+      const key = verificationKey(identifier, token);
+      const existing = verificationTokens.get(key) ?? null;
+      verificationTokens.delete(key);
+      return existing;
+    },
+  } as any;
 }
 
-export async function exchangeCodeForTokens(code: string, redirectUri: string, codeVerifier: string) {
-  const config = await getOidcConfig();
-  const tokens = await client.authorizationCodeGrant(config, new URL(`${redirectUri}?code=${code}`), {
-    pkceCodeVerifier: codeVerifier,
-  });
-  return tokens;
-}
-
-export async function getLogoutUrl(postLogoutRedirectUri: string) {
-  const config = await getOidcConfig();
-  return client.buildEndSessionUrl(config, {
-    client_id: process.env.REPL_ID!,
-    post_logout_redirect_uri: postLogoutRedirectUri,
-  }).href;
-}
-
-export async function upsertUser(userData: UpsertUser) {
-  const [user] = await db
-    .insert(users)
-    .values(userData)
-    .onConflictDoUpdate({
-      target: users.id,
-      set: {
-        ...userData,
-        updatedAt: new Date(),
+export function buildAuthOptions(): NextAuthOptions {
+  return {
+    secret: process.env.NEXTAUTH_SECRET,
+    adapter: createMemoryAdapter(),
+    session: { strategy: "database" },
+    pages: { signIn: "/login" },
+    providers: [
+      GoogleProvider({ clientId: process.env.GOOGLE_CLIENT_ID ?? "", clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "", allowDangerousEmailAccountLinking: true }),
+      GitHubProvider({ clientId: process.env.GITHUB_CLIENT_ID ?? "", clientSecret: process.env.GITHUB_CLIENT_SECRET ?? "", allowDangerousEmailAccountLinking: true }),
+      EmailProvider({ server: process.env.EMAIL_SERVER, from: process.env.EMAIL_FROM }),
+    ],
+    callbacks: {
+      async redirect({ url, baseUrl }) {
+        const safeBaseUrl = canonicalUrl || baseUrl;
+        if (url.startsWith("/")) return `${safeBaseUrl}${url}`;
+        try {
+          const target = new URL(url);
+          const allowed = new URL(safeBaseUrl);
+          if (target.origin === allowed.origin) return url;
+        } catch {
+          return safeBaseUrl;
+        }
+        return safeBaseUrl;
       },
-    })
-    .returning();
-  return user;
-}
-
-export async function getUserById(id: string) {
-  const [user] = await db.select().from(users).where(eq(users.id, id));
-  return user;
+    },
+  };
 }

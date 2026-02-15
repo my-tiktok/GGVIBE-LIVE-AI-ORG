@@ -89,8 +89,8 @@ export async function GET(request: Request) {
     {
       name: "Login",
       method: "GET",
-      path: "/api/login",
-      description: "Initiate OAuth login flow",
+      path: "/api/auth/signin",
+      description: "Initiate NextAuth login flow",
     },
     {
       name: "MCP Health",

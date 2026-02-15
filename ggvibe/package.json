@@ -6,29 +6,34 @@
     "dev": "next dev -p ${PORT:-5000} -H 0.0.0.0",
     "build": "next build",
     "start": "next start -p ${PORT:-5000} -H 0.0.0.0",
-    "lint": "next lint || true",
-    "db:push": "drizzle-kit push"
+    "lint": "next lint",
+    "db:push": "drizzle-kit push",
+    "typecheck": "tsc --noEmit",
+    "verify": "bash scripts/verify-auth-contract.sh"
   },
   "dependencies": {
     "@vercel/analytics": "^1.6.1",
     "drizzle-orm": "^0.45.1",
+    "firebase": "^10.14.1",
     "iron-session": "^8.0.4",
     "memoizee": "^0.4.17",
     "next": "15.5.12",
-    "openid-client": "^6.8.1",
+    "next-auth": "^4.24.11",
+    "nodemailer": "^7.0.10",
     "postgres": "^3.4.8",
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "server-only": "^0.0.1"
   },
   "devDependencies": {
+    "@next/swc-linux-x64-gnu": "^15.5.12",
     "@types/memoizee": "^0.4.12",
     "@types/node": "20.17.12",
     "@types/react": "19.0.3",
     "@types/react-dom": "19.0.2",
     "drizzle-kit": "^0.31.8",
-    "eslint": "^9.39.2",
-    "eslint-config-next": "16.1.6",
+    "eslint": "^8.57.1",
+    "eslint-config-next": "15.5.12",
     "typescript": "5.7.3"
   },
   "eslint": {

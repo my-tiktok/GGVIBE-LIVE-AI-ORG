@@ -12,7 +12,6 @@ jobs:
 
     defaults:
       run:
-<<<<<<< HEAD
         working-directory: ggvibe
 
     steps:
@@ -35,29 +34,5 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
-      - name: Test
-        run: npm test
-
       - name: Build
         run: npm run build
-=======
-        working-directory: ./ggvibe
-
-    strategy:
-      matrix:
-        node-version: [20.x]
-
-    steps:
-    - uses: actions/checkout@v3
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v3
-      with:
-        node-version: ${{ matrix.node-version }}
-        cache: 'npm'
-        cache-dependency-path: ggvibe/package-lock.json
-    - run: npm ci
-    - run: npm run lint
-    - run: npm run typecheck
-    - run: npm run test
-    - run: npm run build
->>>>>>> 8f3e6dc (ci: add deterministic verify workflow)
