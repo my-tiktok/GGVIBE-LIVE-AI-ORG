@@ -60,7 +60,7 @@ export default function HomePage() {
               </button>
             </div>
           ) : (
-            <a href="/api/login" style={{
+            <a href="/login" style={{
               background: '#00d4ff',
               color: '#0f0f23',
               padding: '8px 20px',
@@ -132,7 +132,7 @@ export default function HomePage() {
               flexWrap: 'wrap',
               justifyContent: 'center',
             }}>
-              <a href="/api/login" style={{
+              <a href="/login" style={{
                 background: 'linear-gradient(90deg, #00d4ff, #7c3aed)',
                 color: 'white',
                 padding: '16px 40px',

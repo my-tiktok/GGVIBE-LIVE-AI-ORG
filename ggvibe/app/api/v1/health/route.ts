@@ -1,31 +1,25 @@
 import { NextResponse } from "next/server";
-import { validateEnv } from "@/lib/env";
 import { generateRequestId } from "@/lib/request-id";
 
 export async function GET() {
   const requestId = generateRequestId();
-  const envStatus = validateEnv();
 
-  const response = NextResponse.json(
+  return NextResponse.json(
     {
-      status: envStatus.valid ? "healthy" : "degraded",
+      status: "ok",
       version: "v1",
       requestId,
       checks: {
-        session_secret: !!process.env.SESSION_SECRET,
-        database_url: !!process.env.DATABASE_URL,
-        repl_id: !!process.env.REPL_ID,
-        openai_api_key: !!process.env.OPENAI_API_KEY,
+        nextauth_url: Boolean(process.env.NEXTAUTH_URL),
+        nextauth_secret: Boolean(process.env.NEXTAUTH_SECRET),
       },
       timestamp: new Date().toISOString(),
     },
     {
       headers: {
-        "Cache-Control": "no-cache, no-store, must-revalidate",
         "X-Request-Id": requestId,
+        "Cache-Control": "no-cache, no-store, must-revalidate",
       },
     }
   );
-
-  return response;
 }

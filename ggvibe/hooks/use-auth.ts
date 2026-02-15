@@ -46,7 +46,7 @@ export function useAuth() {
   }, [fetchUser]);
 
   const login = useCallback(() => {
-    window.location.href = "/api/login";
+    window.location.href = "/login";
   }, []);
 
   const logout = useCallback(() => {
