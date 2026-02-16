@@ -25,7 +25,7 @@ export async function GET(request: Request) {
   const startedAt = Date.now();
   const requestId = getRequestId(request);
   const cors = buildCorsHeaders(request, requestId);
-  const rate = rateLimit(request, {
+  const rate = await rateLimit(request, {
     limit: 60,
     windowMs: 60_000,
     keyPrefix: "mcp-version",

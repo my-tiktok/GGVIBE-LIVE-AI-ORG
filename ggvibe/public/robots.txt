@@ -1,4 +1,9 @@
 User-agent: *
 Allow: /
+Disallow: /wallet
+Disallow: /chat
+Disallow: /admin
+Disallow: /seller
+Disallow: /transactions
 
-Sitemap: https://ggvibe-chatgpt-ai.org/sitemap.xml
+Sitemap: https://www.ggvibe-chatgpt-ai.org/sitemap.xml

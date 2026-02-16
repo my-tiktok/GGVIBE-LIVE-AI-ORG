@@ -10,7 +10,7 @@ const MAX_STREAM_CHUNKS = 3;
 export async function POST(request: NextRequest) {
   const requestId = generateRequestId();
 
-  const ipRate = rateLimit(request, {
+  const ipRate = await rateLimit(request, {
     limit: 60,
     windowMs: 60_000,
     keyPrefix: "chat-stream-ip",
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const userRate = rateLimit(request, {
+    const userRate = await rateLimit(request, {
       limit: 20,
       windowMs: 60_000,
       keyPrefix: "chat-stream-user",

@@ -1,98 +1,74 @@
-import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import { users } from "@/lib/schema";
-import { eq } from "drizzle-orm";
-import { getSession } from "@/lib/session";
-import { generateRequestId } from "@/lib/request-id";
-import { jsonError } from "@/lib/http/api-response";
-import { rateLimit, rateLimitHeaders } from "@/lib/security/rate-limit";
+import { cookies } from 'next/headers';
+import { NextResponse } from 'next/server';
+import { getAuthSession } from '@/lib/next-auth';
+import { FIREBASE_SESSION_COOKIE_NAME, getFirebaseAdminAuth } from '@/lib/firebase-admin';
+import { getRequestMeta, logError, logRequest } from '@/lib/observability/logger';
 
-const headers = (requestId: string) => ({
-  "X-Request-Id": requestId,
-  "Cache-Control": "no-cache, no-store, must-revalidate",
-});
+export const runtime = 'nodejs';
+
+type AuthenticatedUser = {
+  uid: string;
+  email: string | null;
+  name?: string | null;
+  image?: string | null;
+};
+
+async function getAuthenticatedUser(request: Request): Promise<AuthenticatedUser | null> {
+  const session = await getAuthSession();
+  if (session?.user?.email) {
+    return {
+      uid: session.user.id || session.user.email,
+      email: session.user.email,
+      name: session.user.name,
+      image: session.user.image,
+    };
+  }
+
+  const authHeader = request.headers.get('authorization');
+  const bearer = authHeader?.startsWith('Bearer ') ? authHeader.slice(7).trim() : undefined;
+  const adminAuth = getFirebaseAdminAuth();
+
+  if (bearer) {
+    const decoded = await adminAuth.verifyIdToken(bearer, true);
+    return {
+      uid: decoded.uid,
+      email: decoded.email ?? null,
+    };
+  }
+
+  const cookieStore = await cookies();
+  const sessionCookie = cookieStore.get(FIREBASE_SESSION_COOKIE_NAME)?.value;
+  if (!sessionCookie) {
+    return null;
+  }
+
+  const decoded = await adminAuth.verifySessionCookie(sessionCookie, true);
+  return {
+    uid: decoded.uid,
+    email: decoded.email ?? null,
+  };
+}
 
 export async function GET(request: Request) {
-  const requestId = generateRequestId();
-  const rate = rateLimit(request, {
-    limit: 30,
-    windowMs: 60_000,
-    keyPrefix: "auth-user",
-  });
-  const rateHeaders = rateLimitHeaders(rate);
-  rateHeaders.set("X-Request-Id", requestId);
-  const combinedHeaders = { ...headers(requestId), ...Object.fromEntries(rateHeaders) };
-  
+  const startedAt = Date.now();
+  const meta = getRequestMeta(request);
+
   try {
-    if (!rate.allowed) {
-      return jsonError(
-        {
-          error: "rate_limited",
-          message: "Too many requests. Please try again later.",
-          requestId,
-        },
-        429,
-        rateHeaders
+    const user = await getAuthenticatedUser(request);
+    if (!user) {
+      return NextResponse.json(
+        { authenticated: false, error: 'unauthorized', requestId: meta.requestId },
+        { status: 401, headers: { 'Cache-Control': 'no-store', 'X-Request-Id': meta.requestId } }
       );
     }
 
-    const session = await getSession();
-    
-    if (!session.isLoggedIn || !session.userId) {
-      return jsonError(
-        {
-          error: "unauthorized",
-          message: "Not authenticated",
-          requestId,
-        },
-        401,
-        combinedHeaders
-      );
-    }
-    
-    const now = Math.floor(Date.now() / 1000);
-    if (session.expiresAt && now > session.expiresAt) {
-      session.destroy();
-      return jsonError(
-        {
-          error: "session_expired",
-          message: "Session expired",
-          requestId,
-        },
-        401,
-        combinedHeaders
-      );
-    }
-    
-    const [user] = await db.select().from(users).where(eq(users.id, session.userId));
-    
-    if (!user) {
-      session.destroy();
-      return jsonError(
-        {
-          error: "user_not_found",
-          message: "User not found",
-          requestId,
-        },
-        401,
-        combinedHeaders
-      );
-    }
-    
-    return NextResponse.json(
-      { authenticated: true, user, requestId },
-      { headers: combinedHeaders }
-    );
+    logRequest({ event: 'api_request', type: 'INFO', requestId: meta.requestId, method: meta.method, path: meta.path, status: 200, durationMs: Date.now() - startedAt, ip: meta.ip, userAgent: meta.userAgent, userId: user.uid });
+    return NextResponse.json({ authenticated: true, user, requestId: meta.requestId }, { headers: { 'Cache-Control': 'no-store', 'X-Request-Id': meta.requestId } });
   } catch (error) {
-    console.error("Error fetching user:", error instanceof Error ? error.message : "Unknown error");
-    return jsonError(
-      {
-        error: "internal_error",
-        message: "Failed to fetch user",
-        requestId,
-      },
-      500,
-      combinedHeaders
+    logError({ type: 'AUTH_ERROR', requestId: meta.requestId, method: meta.method, path: meta.path, status: 401, durationMs: Date.now() - startedAt, ip: meta.ip, userAgent: meta.userAgent, error });
+    return NextResponse.json(
+      { authenticated: false, error: 'unauthorized', requestId: meta.requestId },
+      { status: 401, headers: { 'Cache-Control': 'no-store', 'X-Request-Id': meta.requestId } }
     );
   }
 }

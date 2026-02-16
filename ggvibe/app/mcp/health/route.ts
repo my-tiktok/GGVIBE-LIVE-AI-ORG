@@ -1,20 +1,20 @@
-import { NextResponse } from "next/server";
-import { jsonError } from "@/lib/http/api-response";
-import { buildCorsHeaders } from "@/lib/http/cors";
-import { rateLimit, rateLimitHeaders } from "@/lib/security/rate-limit";
-import { getRequestId } from "@/lib/observability/request-id";
-import { logMcpRequest } from "@/lib/observability/mcp-logger";
-import { validateRuntimeEnv } from "@/lib/env/validate";
+import { NextResponse } from 'next/server';
+import { buildCorsHeaders } from '@/lib/http/cors';
+import { getRequestId } from '@/lib/observability/request-id';
+import { logMcpRequest } from '@/lib/observability/mcp-logger';
 
-function buildResponseHeaders(
-  baseHeaders: Headers,
-  rateHeaders: Headers
-): Headers {
-  const headers = new Headers(baseHeaders);
-  rateHeaders.forEach((value, key) => headers.set(key, value));
-  headers.set("Cache-Control", "no-cache, no-store, must-revalidate");
-  return headers;
-}
+const REQUIRED_ENV_NAMES = [
+  'NEXTAUTH_URL',
+  'NEXTAUTH_SECRET',
+  'GOOGLE_CLIENT_ID',
+  'GOOGLE_CLIENT_SECRET',
+  'GITHUB_CLIENT_ID',
+  'GITHUB_CLIENT_SECRET',
+  'NEXT_PUBLIC_FIREBASE_API_KEY',
+  'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN',
+  'NEXT_PUBLIC_FIREBASE_PROJECT_ID',
+  'NEXT_PUBLIC_FIREBASE_APP_ID',
+];
 
 export async function OPTIONS(request: Request) {
   const requestId = getRequestId(request);
@@ -26,53 +26,34 @@ export async function GET(request: Request) {
   const startedAt = Date.now();
   const requestId = getRequestId(request);
   const cors = buildCorsHeaders(request, requestId);
-  const rate = rateLimit(request, {
-    limit: 30,
-    windowMs: 60_000,
-    keyPrefix: "mcp-health",
-  });
-  const rateHeaders = rateLimitHeaders(rate);
-  const missingEnv = validateRuntimeEnv();
 
-  if (!rate.allowed) {
-    const response = jsonError(
-      {
-        error: "rate_limited",
-        message: "Too many requests. Please try again later.",
-        requestId,
-      },
-      429,
-      buildResponseHeaders(cors.headers, rateHeaders)
-    );
-    logMcpRequest({
-      requestId,
-      method: request.method,
-      path: "/mcp/health",
-      status: 429,
-      latencyMs: Date.now() - startedAt,
-    });
-    return response;
-  }
+  const missing = REQUIRED_ENV_NAMES.filter((name) => !process.env[name]);
 
-  const status = missingEnv.length > 0 ? "degraded" : "healthy";
   const response = NextResponse.json(
     {
-      status,
+      ok: true,
+      status: missing.length === 0 ? 'healthy' : 'degraded',
+      missing,
       requestId,
-      missingEnv,
       timestamp: new Date().toISOString(),
     },
     {
       status: 200,
-      headers: buildResponseHeaders(cors.headers, rateHeaders),
+      headers: {
+        ...Object.fromEntries(cors.headers.entries()),
+        'Cache-Control': 'no-store',
+        'X-Request-Id': requestId,
+      },
     }
   );
+
   logMcpRequest({
     requestId,
     method: request.method,
-    path: "/mcp/health",
+    path: '/mcp/health',
     status: 200,
     latencyMs: Date.now() - startedAt,
   });
+
   return response;
 }
