@@ -29,14 +29,19 @@ export async function getServerViewer(): Promise<ServerViewer | null> {
   }
 
   const auth = getFirebaseAdminAuth();
-  const decoded = await auth.verifySessionCookie(firebaseSession, true);
-  return {
-    uid: decoded.uid,
-    email: decoded.email ?? null,
-    name: decoded.name ?? null,
-    image: decoded.picture ?? null,
-    source: 'firebase',
-  };
+  try {
+    const decoded = await auth.verifySessionCookie(firebaseSession, true);
+    return {
+      uid: decoded.uid,
+      email: decoded.email ?? null,
+      name: decoded.name ?? null,
+      image: decoded.picture ?? null,
+      source: 'firebase',
+    };
+  } catch {
+    // Session cookie is invalid, expired, or revoked - treat as unauthenticated
+    return null;
+  }
 }
 
 export function isAdminEmail(email: string | null | undefined): boolean {
