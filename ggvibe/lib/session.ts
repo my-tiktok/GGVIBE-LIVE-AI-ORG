@@ -23,7 +23,6 @@ type SessionHandle = SessionData & {
 function getSessionSecret(): string | undefined {
   const secret = process.env.SESSION_SECRET || process.env.NEXTAUTH_SECRET;
   if (!secret) {
-    console.warn("SESSION_SECRET or NEXTAUTH_SECRET is required for persisted sessions.");
     return undefined;
   }
   if (secret.length < 32) {

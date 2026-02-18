@@ -1,13 +1,33 @@
 import { NextResponse } from "next/server";
+import { getRuntimeHealth } from "@/lib/env/validate";
 
 export async function GET() {
-  const health = {
-    status: "ok",
-    timestamp: new Date().toISOString(),
-    nextAuthSecretConfigured: !!process.env.NEXTAUTH_SECRET,
-    nextAuthUrlConfigured: !!process.env.NEXTAUTH_URL,
-    appUrlConfigured: !!process.env.NEXTAUTH_URL,
-  };
+  const { missingEnv } = getRuntimeHealth();
 
-  return NextResponse.json(health, { status: 200 });
+  if (missingEnv.length > 0) {
+    return NextResponse.json(
+      {
+        status: "unhealthy",
+        code: "missing_env",
+      },
+      {
+        status: 503,
+        headers: {
+          "Cache-Control": "no-store",
+        },
+      }
+    );
+  }
+
+  return NextResponse.json(
+    {
+      status: "ok",
+    },
+    {
+      status: 200,
+      headers: {
+        "Cache-Control": "no-store",
+      },
+    }
+  );
 }

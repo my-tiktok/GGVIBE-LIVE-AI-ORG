@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
 import { generateRequestId } from "@/lib/request-id";
 import { rateLimit, rateLimitHeaders } from "@/lib/security/rate-limit";
+import { getAiConfigStatus } from "@/features/ai/config";
 
 const MAX_REQUEST_SIZE = 10 * 1024;
 const MAX_TOKENS = 512;
@@ -46,6 +47,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: "upgrade_required", message: "AI access is not enabled for this account.", requestId },
         { status: 403, headers: { "X-Request-Id": requestId } }
+      );
+    }
+
+    const aiConfig = getAiConfigStatus();
+    if (!aiConfig.configured) {
+      return NextResponse.json(
+        { error: "missing_ai_env", message: "AI is not configured yet.", requestId, missingEnv: aiConfig.missingEnv },
+        { status: 503, headers: { "X-Request-Id": requestId } }
       );
     }
 

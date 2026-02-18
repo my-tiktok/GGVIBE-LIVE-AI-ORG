@@ -1,26 +1,27 @@
-import { MetadataRoute } from 'next'
+import { MetadataRoute } from "next";
+
+const CANONICAL_BASE_URL = "https://www.ggvibe-chatgpt-ai.org";
+
+function getBaseUrl() {
+  const configured = process.env.NEXTAUTH_URL;
+  if (!configured) {
+    return CANONICAL_BASE_URL;
+  }
+
+  try {
+    return new URL(configured).origin;
+  } catch {
+    return CANONICAL_BASE_URL;
+  }
+}
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = 'https://ggvibe-chatgpt-ai.org'
+  const baseUrl = getBaseUrl();
 
-  return [
-    {
-      url: baseUrl,
-      lastModified: new Date(),
-      changeFrequency: 'weekly',
-      priority: 1,
-    },
-    {
-      url: `${baseUrl}/privacy`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.5,
-    },
-    {
-      url: `${baseUrl}/terms`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.5,
-    },
-  ]
+  return ["", "/privacy", "/terms", "/login"].map((path) => ({
+    url: `${baseUrl}${path}`,
+    lastModified: new Date(),
+    changeFrequency: "weekly" as const,
+    priority: path === "" ? 1 : 0.6,
+  }));
 }

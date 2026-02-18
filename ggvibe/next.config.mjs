@@ -48,24 +48,8 @@ const nextConfig = {
     return config;
   },
 
-  /**
-   * CRITICAL: Do NOT use rewrites/redirects/middleware for protected paths:
-   *   /.well-known/* must be file-backed (served from /public)
-   *   /api/health, /mcp must not be intercepted
-   * 
-   * File-backed routes are served directly by Next.js static handler,
-   * ensuring compatibility with all domains and avoiding redirect loops.
-   */
-
   async headers() {
     return [
-      {
-        source: '/.well-known/openai-apps-challenge',
-        headers: [
-          { key: 'Content-Type', value: 'text/plain; charset=utf-8' },
-          { key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' },
-        ],
-      },
       {
         source: "/:path*",
         headers: [
@@ -111,6 +95,20 @@ const nextConfig = {
               "form-action 'self'",
             ].join("; "),
           },
+        ],
+      },
+      {
+        source: "/.well-known/openai-apps-challenge",
+        headers: [
+          { key: "Content-Type", value: "text/plain; charset=utf-8" },
+          { key: "Cache-Control", value: "no-store" },
+        ],
+      },
+      {
+        source: "/.well-known/op",
+        headers: [
+          { key: "Content-Type", value: "text/plain; charset=utf-8" },
+          { key: "Cache-Control", value: "no-store" },
         ],
       },
     ];

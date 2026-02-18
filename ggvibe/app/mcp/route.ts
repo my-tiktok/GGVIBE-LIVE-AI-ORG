@@ -5,7 +5,7 @@ import { rateLimit, rateLimitHeaders } from "@/lib/security/rate-limit";
 import { buildCorsHeaders } from "@/lib/http/cors";
 import { getRequestId } from "@/lib/observability/request-id";
 import { logMcpRequest } from "@/lib/observability/mcp-logger";
-import { validateRuntimeEnv } from "@/lib/env/validate";
+import { getRuntimeHealth } from "@/lib/env/validate";
 
 interface McpEndpoint {
   name: string;
@@ -41,7 +41,7 @@ export async function GET(request: Request) {
     keyPrefix: "mcp",
   });
   const rateHeaders = rateLimitHeaders(rate);
-  const missingEnv = validateRuntimeEnv();
+  const { missingEnv } = getRuntimeHealth();
 
   if (!rate.allowed) {
     const response = jsonError(

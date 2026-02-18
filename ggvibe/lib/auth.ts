@@ -1,10 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { randomUUID } from "crypto";
+import { FirestoreAdapter } from "@auth/firebase-adapter";
 import type { Adapter, AdapterAccount } from "next-auth/adapters";
 import type { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import GitHubProvider from "next-auth/providers/github";
 import EmailProvider from "next-auth/providers/email";
+import { getAdminFirestore } from "@/lib/firebase-admin";
+import { getOrCreateUserProfile } from "@/lib/user-store";
 
 const canonicalUrl = process.env.NEXTAUTH_URL || "https://www.ggvibe-chatgpt-ai.org";
 
@@ -32,7 +35,12 @@ const verificationKey = (identifier: string, token: string) => `${identifier}:${
 function createMemoryAdapter(): Adapter {
   return {
     async createUser(data: any) {
-      const user = { id: data.id ?? randomUUID(), ...data };
+      const user = {
+        id: data.id ?? randomUUID(),
+        role: data.role ?? "user",
+        plan: data.plan ?? "free",
+        ...data,
+      };
       users.set(user.id, user);
       if (user.email) usersByEmail.set(user.email, user.id);
       return user;
@@ -100,13 +108,34 @@ function createMemoryAdapter(): Adapter {
       verificationTokens.delete(key);
       return existing;
     },
-  } as any;
+  } as Adapter;
+}
+
+function buildAdapter(): Adapter {
+  const firestore = getAdminFirestore();
+  if (firestore) {
+    return FirestoreAdapter(firestore);
+  }
+
+  return createMemoryAdapter();
+}
+
+function resolveAuthSecret() {
+  if (process.env.NEXTAUTH_SECRET) {
+    return process.env.NEXTAUTH_SECRET;
+  }
+
+  if (process.env.NODE_ENV !== "production") {
+    return "dev-insecure-nextauth-secret";
+  }
+
+  return undefined;
 }
 
 export function buildAuthOptions(): NextAuthOptions {
   return {
-    secret: process.env.NEXTAUTH_SECRET,
-    adapter: createMemoryAdapter(),
+    secret: resolveAuthSecret(),
+    adapter: buildAdapter(),
     session: { strategy: "database" },
     pages: { signIn: "/login" },
     providers: [
@@ -115,17 +144,35 @@ export function buildAuthOptions(): NextAuthOptions {
       EmailProvider({ server: process.env.EMAIL_SERVER, from: process.env.EMAIL_FROM }),
     ],
     callbacks: {
+      async signIn({ user }) {
+        if (!user.role) user.role = "user";
+        if (!user.plan) user.plan = "free";
+        const uid = String((user as any).id || user.email || "").toLowerCase().replace(/[^a-z0-9_.-]/g, "_");
+        if (uid) await getOrCreateUserProfile(uid, user.email || undefined);
+        return true;
+      },
+      async session({ session, user }) {
+        if (session.user) {
+          session.user.role = (user as any)?.role ?? "user";
+          session.user.plan = (user as any)?.plan ?? "free";
+        }
+        return session;
+      },
       async redirect({ url, baseUrl }) {
         const safeBaseUrl = canonicalUrl || baseUrl;
-        if (url.startsWith("/")) return `${safeBaseUrl}${url}`;
+        if (url.startsWith("/")) {
+          return url === "/" ? `${safeBaseUrl}/dashboard` : `${safeBaseUrl}${url}`;
+        }
         try {
           const target = new URL(url);
           const allowed = new URL(safeBaseUrl);
-          if (target.origin === allowed.origin) return url;
+          if (target.origin === allowed.origin) {
+            return target.pathname === "/" ? `${safeBaseUrl}/dashboard` : url;
+          }
         } catch {
-          return safeBaseUrl;
+          return `${safeBaseUrl}/dashboard`;
         }
-        return safeBaseUrl;
+        return `${safeBaseUrl}/dashboard`;
       },
     },
   };
