@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 export default function TermsPage() {
   return (
     <main style={{
@@ -7,9 +9,9 @@ export default function TermsPage() {
       padding: '40px 20px',
     }}>
       <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-        <a href="/" style={{ color: '#00d4ff', textDecoration: 'none', marginBottom: '24px', display: 'inline-block' }}>
+        <Link href="/" style={{ color: '#00d4ff', textDecoration: 'none', marginBottom: '24px', display: 'inline-block' }}>
           &larr; Back to Home
-        </a>
+        </Link>
 
         <h1 style={{ color: '#00d4ff', marginBottom: '32px' }}>Terms of Service</h1>
 

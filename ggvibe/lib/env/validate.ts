@@ -4,18 +4,12 @@ type EnvCheck = {
 };
 
 const REQUIRED_ENV: EnvCheck[] = [
-  { name: "REPL_ID", requiredFor: "OIDC login" },
-  { name: "DATABASE_URL", requiredFor: "database access" },
-  { name: "SESSION_SECRET", requiredFor: "session persistence (or NEXTAUTH_SECRET)" },
+    { name: "DATABASE_URL", requiredFor: "database access" },
+  { name: "NEXTAUTH_SECRET", requiredFor: "auth/session signing" },
 ];
 
 export function validateRuntimeEnv(): string[] {
-  const missing = REQUIRED_ENV.filter((entry) => {
-    if (entry.name === "SESSION_SECRET") {
-      return !process.env.SESSION_SECRET && !process.env.NEXTAUTH_SECRET;
-    }
-    return !process.env[entry.name];
-  }).map((entry) => entry.name);
+  const missing = REQUIRED_ENV.filter((entry) => !process.env[entry.name]).map((entry) => entry.name);
 
   if (missing.length > 0) {
     console.error(

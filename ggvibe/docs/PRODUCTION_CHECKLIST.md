@@ -1,70 +1,56 @@
-# Production Deployment Checklist
+# Production Checklist (Vercel)
 
-## Pre-Deployment
+## Public vs private routes
+- Public/indexable: `/`, `/login`, `/privacy`, `/terms`.
+- Private/non-indexable: `/chat`, `/wallet`, `/transactions`, `/seller/*`, `/admin`.
 
-### 1. Environment Variables
-Verify all required secrets are set:
+## Auth guard behavior
+- Middleware redirects unauthenticated private-route requests to `/login?next=...`.
+- App private layout (`app/(app)/layout.tsx`) also server-checks session and redirects to `/login`.
+- Admin route uses `ADMIN_EMAILS` allowlist and redirects non-admin users to `/chat?error=forbidden`.
 
-```bash
-# Required
-SESSION_SECRET     # Min 32 chars, used for cookie encryption
-DATABASE_URL       # PostgreSQL connection string
-REPL_ID           # Replit project ID (auto-provided)
-```
+## Sitemap allowlist
+- `app/sitemap.ts` includes only public routes.
+- Private app routes are intentionally excluded.
 
-### 2. Database
-```bash
-cd ggvibe
-npm run db:push   # Sync schema to database
-```
+## Robots policy
+- `public/robots.txt` disallows private prefixes.
+- `public/robots.txt` references canonical sitemap URL:
+  - `https://www.ggvibe-chatgpt-ai.org/sitemap.xml`
+- Private layout sets `robots: { index: false, follow: false }`.
 
-### 3. Build Verification
-```bash
-cd ggvibe
-npm ci            # Clean install from lockfile
-npm run build     # Verify production build passes
-npm run start     # Test production server starts
-```
+## Canonical domain policy
+- Canonical host: `https://www.ggvibe-chatgpt-ai.org`.
+- Middleware redirects apex/non-www/vercel.app hosts to canonical `www` with `308` in production.
+- Middleware bypasses: `/api/**`, `/mcp/**`, `/.well-known/**`.
 
-### 4. Health Check
-```bash
-curl http://localhost:5000/api/auth/health
-# Expected: {"status":"healthy","checks":{...}}
-```
+## Required Vercel environment variables
+- `NEXTAUTH_URL`
+- `NEXTAUTH_SECRET`
+- `GOOGLE_CLIENT_ID`
+- `GOOGLE_CLIENT_SECRET`
+- `GITHUB_CLIENT_ID`
+- `GITHUB_CLIENT_SECRET`
+- `EMAIL_SERVER`
+- `EMAIL_FROM`
+- `NEXT_PUBLIC_FIREBASE_API_KEY`
+- `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
+- `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
+- `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`
+- `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
+- `NEXT_PUBLIC_FIREBASE_APP_ID`
+- `FIREBASE_SERVICE_ACCOUNT_KEY` (or split admin vars)
+- `ADMIN_EMAILS`
 
-## Deployment Steps (Replit)
+## Health checks
+- `GET /api/health` returns env readiness status and missing env names.
+- `GET /api/auth/health` returns auth checks and status.
+- `GET /mcp/health` returns MCP readiness and missing env names.
 
-1. Click **Publish** button in Replit
-2. Select **Autoscale** deployment type
-3. Verify build command: `cd ggvibe && npm ci && npm run build`
-4. Verify run command: `cd ggvibe && npm run start`
-5. Click **Publish**
+## Runtime version pin
+- Use Node.js `20.x` in Vercel project settings (and package engines).
 
-## Post-Deployment Verification
-
-### 1. Health Check
-```bash
-curl https://ggvibe-chatgpt-ai.org/api/auth/health
-```
-
-### 2. OAuth Flow
-1. Visit https://ggvibe-chatgpt-ai.org
-2. Click "Sign In"
-3. Verify redirect to Replit OAuth
-4. Complete authentication
-5. Verify redirect back to app with session
-
-### 3. Security Headers
-```bash
-curl -I https://ggvibe-chatgpt-ai.org/ | grep -E "^(x-|referrer)"
-# Expected:
-# x-content-type-options: nosniff
-# x-frame-options: SAMEORIGIN
-# referrer-policy: strict-origin-when-cross-origin
-```
-
-## Rollback
-
-If issues occur:
-1. Use Replit's **Checkpoints** feature to revert
-2. Or redeploy previous working commit
+## Marketplace entitlements (no payment provider code)
+- Marketplace is locked by Firestore `users/{uid}` entitlement fields: `plan`, `planStatus`, `planExpiresAt`.
+- Access granted only when `planStatus=active` and `plan` is `MONTHLY` or `ANNUAL`.
+- Stripe and Paystack integrations are intentionally not present in this repo.
