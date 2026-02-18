@@ -48,11 +48,12 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline'",
+              "script-src 'self' 'unsafe-inline' https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https:",
               "connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://*.upstash.io https://api.openai.com",
               "font-src 'self' data:",
+              "frame-src https://www.google.com/recaptcha/",
               "frame-ancestors 'none'",
               "object-src 'none'",
               "base-uri 'self'",
