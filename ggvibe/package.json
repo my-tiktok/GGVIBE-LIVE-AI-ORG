@@ -17,7 +17,7 @@
     "@vercel/analytics": "^1.6.1",
     "drizzle-orm": "^0.45.1",
     "firebase": "^10.14.1",
-    "firebase-admin": "^13.0.1",
+    "firebase-admin": "^13.6.1",
     "iron-session": "^8.0.4",
     "memoizee": "^0.4.17",
     "next": "15.5.12",
