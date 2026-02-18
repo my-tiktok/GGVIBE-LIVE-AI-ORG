@@ -1,24 +1,32 @@
 import { NextResponse } from "next/server";
-import { generateRequestId } from "@/lib/request-id";
+import { getRuntimeHealth } from "@/lib/env/validate";
 
 export async function GET() {
-  const requestId = generateRequestId();
+  const { missingEnv } = getRuntimeHealth();
+
+  if (missingEnv.length > 0) {
+    return NextResponse.json(
+      {
+        status: "unhealthy",
+        code: "missing_env",
+      },
+      {
+        status: 503,
+        headers: {
+          "Cache-Control": "no-store",
+        },
+      }
+    );
+  }
 
   return NextResponse.json(
     {
       status: "ok",
-      version: "v1",
-      requestId,
-      checks: {
-        nextauth_url: Boolean(process.env.NEXTAUTH_URL),
-        nextauth_secret: Boolean(process.env.NEXTAUTH_SECRET),
-      },
-      timestamp: new Date().toISOString(),
     },
     {
+      status: 200,
       headers: {
-        "X-Request-Id": requestId,
-        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "Cache-Control": "no-store",
       },
     }
   );

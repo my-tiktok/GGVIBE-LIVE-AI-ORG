@@ -1,2 +1,10 @@
 User-agent: *
+Disallow: /api
+Disallow: /mcp
+Disallow: /login
+Disallow: /dashboard
+Disallow: /wallet
+Disallow: /marketplace
+Disallow: /seller
 Disallow: /payouts
+Disallow: /plans

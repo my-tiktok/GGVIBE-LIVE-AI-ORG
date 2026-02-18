@@ -7,7 +7,7 @@ function toSignInUrl(request: Request): URL {
   target.pathname = SIGNIN_PATH;
   target.search = "";
 
-  const callbackUrl = new URL(request.url).searchParams.get("callbackUrl") || "/";
+  const callbackUrl = new URL(request.url).searchParams.get("callbackUrl") || "/dashboard";
   target.searchParams.set("callbackUrl", callbackUrl);
   return target;
 }

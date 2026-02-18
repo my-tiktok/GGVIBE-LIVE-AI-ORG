@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
 import { generateRequestId } from "@/lib/request-id";
+import { getAiConfigStatus } from "@/features/ai/config";
 
 const headers = (requestId: string) => ({
   "Cache-Control": "no-cache, no-store, must-revalidate",
@@ -20,9 +21,13 @@ export async function GET() {
       );
     }
 
+    const aiConfig = getAiConfigStatus();
     return NextResponse.json(
       {
         chats: [],
+        ai: aiConfig.configured
+          ? { status: "configured" }
+          : { status: "missing_ai_env", message: "AI is not configured yet.", missingEnv: aiConfig.missingEnv },
         message: "Chat list endpoint - not yet implemented",
         requestId,
       },

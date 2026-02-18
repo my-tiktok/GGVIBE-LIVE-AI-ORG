@@ -72,7 +72,7 @@ export default function AuthSuccessPage() {
       return () => clearInterval(timer);
     } else {
       const timer = setTimeout(() => {
-        window.location.href = "/";
+        window.location.href = "/dashboard";
       }, 2000);
       return () => clearTimeout(timer);
     }
@@ -82,7 +82,7 @@ export default function AuthSuccessPage() {
     if (deepLinkScheme) {
       window.location.href = `${deepLinkScheme}/success`;
     } else {
-      window.location.href = "/";
+      window.location.href = "/dashboard";
     }
   };
 
