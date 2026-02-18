@@ -1,48 +1,33 @@
-import { NextResponse } from "next/server";
-import { generateRequestId } from "@/lib/http/result";
-import { jsonError } from "@/lib/http/api-response";
-import { rateLimit, rateLimitHeaders } from "@/lib/security/rate-limit";
+import { NextResponse } from 'next/server';
+import { generateRequestId } from '@/lib/http/result';
 
-export async function GET(request: Request) {
+export async function GET() {
   const requestId = generateRequestId();
-  const rate = rateLimit(request, {
-    limit: 30,
-    windowMs: 60_000,
-    keyPrefix: "auth-health",
-  });
-  const rateHeaders = rateLimitHeaders(rate);
-  rateHeaders.set("X-Request-Id", requestId);
-  
+
   const checks = {
-    session_secret: !!process.env.SESSION_SECRET || !!process.env.NEXTAUTH_SECRET,
-    database_url: !!process.env.DATABASE_URL,
-    repl_id: !!process.env.REPL_ID,
+    nextauth_secret: Boolean(process.env.NEXTAUTH_SECRET),
+    nextauth_url: Boolean(process.env.NEXTAUTH_URL),
+    google_provider: Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
+    github_provider: Boolean(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET),
+    email_provider: Boolean(process.env.EMAIL_SERVER && process.env.EMAIL_FROM),
+    firebase_admin: Boolean(process.env.FIREBASE_SERVICE_ACCOUNT_KEY),
   };
 
-  const allHealthy = Object.values(checks).every(Boolean);
-
-  if (!rate.allowed) {
-    return jsonError(
-      {
-        error: "rate_limited",
-        message: "Too many requests. Please try again later.",
-        requestId,
-      },
-      429,
-      rateHeaders
-    );
-  }
+  const healthy = checks.nextauth_secret && checks.nextauth_url;
 
   return NextResponse.json(
     {
-      status: allHealthy ? "healthy" : "degraded",
+      status: healthy ? 'healthy' : 'degraded',
       requestId,
       checks,
       timestamp: new Date().toISOString(),
     },
-    { 
-      status: allHealthy ? 200 : 503,
-      headers: rateHeaders
+    {
+      status: 200,
+      headers: {
+        'Cache-Control': 'no-store',
+        'X-Request-Id': requestId,
+      },
     }
   );
 }

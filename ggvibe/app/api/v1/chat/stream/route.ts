@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/session";
+import { getServerViewer } from "@/lib/auth/server-viewer";
 import { generateRequestId } from "@/lib/request-id";
 import { rateLimit, rateLimitHeaders } from "@/lib/security/rate-limit";
 
@@ -10,7 +10,7 @@ const MAX_STREAM_CHUNKS = 3;
 export async function POST(request: NextRequest) {
   const requestId = generateRequestId();
 
-  const ipRate = rateLimit(request, {
+  const ipRate = await rateLimit(request, {
     limit: 60,
     windowMs: 60_000,
     keyPrefix: "chat-stream-ip",
@@ -34,19 +34,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const session = await getSession();
-    if (!session.isLoggedIn || !session.userId) {
+    const viewer = await getServerViewer();
+    if (!viewer) {
       return NextResponse.json(
         { error: "unauthorized", message: "Not authenticated", requestId },
         { status: 401, headers: { "X-Request-Id": requestId } }
       );
     }
 
-    const userRate = rateLimit(request, {
+    const userRate = await rateLimit(request, {
       limit: 20,
       windowMs: 60_000,
       keyPrefix: "chat-stream-user",
-      keySuffix: session.userId,
+      keySuffix: viewer.uid,
     });
     const userRateHeaders = rateLimitHeaders(userRate);
     userRateHeaders.set("X-Request-Id", requestId);
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
     }
 
     console.info(`[${requestId}] Chat stream start`, {
-      userId: session.userId,
+      userId: viewer.uid,
       contentLength: request.headers.get("content-length"),
     });
 

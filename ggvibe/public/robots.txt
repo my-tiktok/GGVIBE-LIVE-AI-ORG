@@ -1,4 +1,16 @@
 User-agent: *
 Allow: /
+Disallow: /api
+Disallow: /mcp
+Disallow: /login
+Disallow: /dashboard
+Disallow: /marketplace
+Disallow: /seller
+Disallow: /payouts
+Disallow: /plans
+Disallow: /wallet
+Disallow: /chat
+Disallow: /admin
+Disallow: /transactions
 
-Sitemap: https://ggvibe-chatgpt-ai.org/sitemap.xml
+Sitemap: https://www.ggvibe-chatgpt-ai.org/sitemap.xml

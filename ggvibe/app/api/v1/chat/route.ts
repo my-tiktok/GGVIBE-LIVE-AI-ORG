@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { getSession } from "@/lib/session";
 import { generateRequestId } from "@/lib/request-id";
+import { getServerViewer } from "@/lib/auth/server-viewer";
 
 const headers = (requestId: string) => ({
   "Cache-Control": "no-cache, no-store, must-revalidate",
@@ -11,9 +11,9 @@ export async function GET() {
   const requestId = generateRequestId();
 
   try {
-    const session = await getSession();
+    const viewer = await getServerViewer();
 
-    if (!session.isLoggedIn) {
+    if (!viewer) {
       return NextResponse.json(
         { error: "unauthorized", message: "Not authenticated", requestId },
         { status: 401, headers: headers(requestId) }
@@ -24,6 +24,7 @@ export async function GET() {
       {
         chats: [],
         message: "Chat list endpoint - not yet implemented",
+        user: { uid: viewer.uid, email: viewer.email },
         requestId,
       },
       { headers: headers(requestId) }
@@ -41,9 +42,9 @@ export async function POST(request: Request) {
   const requestId = generateRequestId();
 
   try {
-    const session = await getSession();
+    const viewer = await getServerViewer();
 
-    if (!session.isLoggedIn) {
+    if (!viewer) {
       return NextResponse.json(
         { error: "unauthorized", message: "Not authenticated", requestId },
         { status: 401, headers: headers(requestId) }
@@ -58,6 +59,7 @@ export async function POST(request: Request) {
           id: `chat_${Date.now()}`,
           title: body.title || "New Chat",
           createdAt: new Date().toISOString(),
+          ownerId: viewer.uid,
         },
         message: "Chat create endpoint - not yet implemented",
         requestId,

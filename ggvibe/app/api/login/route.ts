@@ -1,97 +1,121 @@
-import { NextResponse } from "next/server";
-import * as client from "openid-client";
-import memoize from "memoizee";
-import { cookies } from "next/headers";
-import { getCanonicalUrl, getCallbackUrl } from "@/lib/url/base-url";
-import { generateRequestId } from "@/lib/request-id";
-import { isProduction } from "@/lib/env";
-import { jsonError } from "@/lib/http/api-response";
-import { rateLimit, rateLimitHeaders } from "@/lib/security/rate-limit";
+import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+import { FIREBASE_SESSION_COOKIE_NAME, getFirebaseAdminAuth } from '@/lib/firebase-admin';
+import { getFailedLoginLimit, recordFailedLoginAttempt } from '@/lib/security/failed-login-rate-limit';
+import { getRequestMeta, logError, logRequest, maskEmail } from '@/lib/observability/logger';
 
-const getOidcConfig = memoize(
-  async () => {
-    return await client.discovery(
-      new URL(process.env.ISSUER_URL ?? "https://replit.com/oidc"),
-      process.env.REPL_ID!
-    );
-  },
-  { maxAge: 3600 * 1000 }
-);
+export const runtime = 'nodejs';
+
+const SESSION_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+
+function baseHeaders(requestId: string): HeadersInit {
+  return {
+    'Cache-Control': 'no-store',
+    'X-Request-Id': requestId,
+  };
+}
 
 export async function GET(request: Request) {
-  const requestId = generateRequestId();
-  const canonicalUrl = getCanonicalUrl();
-  const redirectUri = getCallbackUrl();
-  const rate = rateLimit(request, {
-    limit: 10,
-    windowMs: 60_000,
-    keyPrefix: "login",
+  const startedAt = Date.now();
+  const meta = getRequestMeta(request);
+  const location = new URL('/api/auth/signin', request.url).toString();
+  logRequest({
+    event: 'api_request',
+    type: 'INFO',
+    requestId: meta.requestId,
+    method: meta.method,
+    path: meta.path,
+    status: 307,
+    durationMs: Date.now() - startedAt,
+    ip: meta.ip,
+    userAgent: meta.userAgent,
+    details: { redirect: '/api/auth/signin' },
   });
-  const rateHeaders = rateLimitHeaders(rate);
-  rateHeaders.set("X-Request-Id", requestId);
 
-  if (!rate.allowed) {
-    return jsonError(
-      {
-        error: "rate_limited",
-        message: "Too many login attempts. Please try again later.",
-        requestId,
-      },
-      429,
-      rateHeaders
-    );
+  return NextResponse.redirect(location, {
+    status: 307,
+    headers: baseHeaders(meta.requestId),
+  });
+}
+
+export async function OPTIONS(request: Request) {
+  const meta = getRequestMeta(request);
+  return new NextResponse(null, {
+    status: 204,
+    headers: {
+      ...baseHeaders(meta.requestId),
+      Allow: 'GET, POST, OPTIONS',
+    },
+  });
+}
+
+export async function POST(request: Request) {
+  const startedAt = Date.now();
+  const meta = getRequestMeta(request);
+
+  let body: { idToken?: string; email?: string };
+  try {
+    body = (await request.json()) as { idToken?: string; email?: string };
+  } catch (error) {
+    logError({ type: 'VALIDATION_ERROR', requestId: meta.requestId, method: meta.method, path: meta.path, status: 400, durationMs: Date.now() - startedAt, ip: meta.ip, userAgent: meta.userAgent, error });
+    return NextResponse.json({ error: 'invalid_request', requestId: meta.requestId }, { status: 400, headers: baseHeaders(meta.requestId) });
   }
 
-  const requestHost = new URL(request.url).host;
-  const canonicalHost = new URL(canonicalUrl).host;
-
-  if (isProduction() && requestHost !== canonicalHost) {
-    console.log(`[${requestId}] Redirecting to canonical host for login: ${requestHost} -> ${canonicalHost}`);
-    const response = NextResponse.redirect(`${canonicalUrl}/api/login`);
-    response.headers.set("X-Request-Id", requestId);
-    rateHeaders.forEach((value, key) => response.headers.set(key, value));
-    return response;
+  const idToken = body.idToken?.trim();
+  const email = body.email?.trim().toLowerCase();
+  if (!idToken) {
+    return NextResponse.json({ error: 'invalid_request', requestId: meta.requestId }, { status: 400, headers: baseHeaders(meta.requestId) });
   }
 
   try {
-    const config = await getOidcConfig();
-    const codeVerifier = client.randomPKCECodeVerifier();
-    const codeChallenge = await client.calculatePKCECodeChallenge(codeVerifier);
-    const state = client.randomState();
-
-    const authUrl = client.buildAuthorizationUrl(config, {
-      redirect_uri: redirectUri,
-      scope: "openid email profile",
-      code_challenge: codeChallenge,
-      code_challenge_method: "S256",
-      state,
-    });
+    const auth = getFirebaseAdminAuth();
+    const decoded = await auth.verifyIdToken(idToken, true);
+    const sessionCookie = await auth.createSessionCookie(idToken, { expiresIn: SESSION_MAX_AGE_MS });
 
     const cookieStore = await cookies();
-    const cookieOptions = {
+    cookieStore.set(FIREBASE_SESSION_COOKIE_NAME, sessionCookie, {
       httpOnly: true,
-      secure: isProduction(),
-      sameSite: "lax" as const,
-      path: "/",
-      maxAge: 600,
-    };
-
-    cookieStore.set("code_verifier", codeVerifier, cookieOptions);
-    cookieStore.set("oauth_state", state, cookieOptions);
-
-    console.log(`[${requestId}] OAuth login initiated, redirect_uri: ${redirectUri}`);
-
-    const response = NextResponse.redirect(authUrl.href);
-    response.headers.set("X-Request-Id", requestId);
-    rateHeaders.forEach((value, key) => response.headers.set(key, value));
-    return response;
-  } catch (error) {
-    console.error(`[${requestId}] Login error:`, {
-      message: error instanceof Error ? error.message : "Unknown error",
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: SESSION_MAX_AGE_MS / 1000,
     });
-    const response = NextResponse.redirect(`${canonicalUrl}/login?error=login_failed`);
-    response.headers.set("X-Request-Id", requestId);
-    rateHeaders.forEach((value, key) => response.headers.set(key, value));
-    return response;
+
+    return NextResponse.json({ authenticated: true, uid: decoded.uid, requestId: meta.requestId }, { status: 200, headers: baseHeaders(meta.requestId) });
+  } catch (error) {
+    try {
+      await recordFailedLoginAttempt(request, email, { requestId: meta.requestId, path: meta.path });
+      const limit = await getFailedLoginLimit(request, email);
+      if (limit.limited) {
+        return NextResponse.json(
+          { error: 'rate_limited', requestId: meta.requestId },
+          {
+            status: 429,
+            headers: {
+              ...baseHeaders(meta.requestId),
+              'Retry-After': String(limit.retryAfterSeconds ?? 60),
+            },
+          }
+        );
+      }
+    } catch (limiterError) {
+      logError({ type: 'SYSTEM_ERROR', requestId: meta.requestId, method: meta.method, path: meta.path, status: 503, durationMs: Date.now() - startedAt, ip: meta.ip, userAgent: meta.userAgent, error: limiterError });
+      return NextResponse.json({ error: 'service_unavailable', requestId: meta.requestId }, { status: 503, headers: baseHeaders(meta.requestId) });
+    }
+
+    logError({
+      type: 'AUTH_ERROR',
+      requestId: meta.requestId,
+      method: meta.method,
+      path: meta.path,
+      status: 401,
+      durationMs: Date.now() - startedAt,
+      ip: meta.ip,
+      userAgent: meta.userAgent,
+      error,
+      details: { email: maskEmail(email) },
+    });
+
+    return NextResponse.json({ error: 'unauthorized', requestId: meta.requestId }, { status: 401, headers: baseHeaders(meta.requestId) });
   }
 }
