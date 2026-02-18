@@ -46,16 +46,31 @@ export async function listListings(params: {
     return { items: page, nextCursor };
   }
 
-  let q = firestore.collection("listings").where("status", "==", "active").orderBy("createdAt", "desc");
+  let q = firestore.collection("listings").where("status", "==", "active");
+  if (params.type && params.type !== "ALL") {
+    q = q.where("type", "==", params.type);
+  }
+
+  if (params.sort === "price_asc") {
+    q = q.orderBy("price", "asc");
+  } else if (params.sort === "price_desc") {
+    q = q.orderBy("price", "desc");
+  } else {
+    q = q.orderBy("createdAt", "desc");
+  }
+
   if (params.cursor) {
     const cursorDoc = await firestore.collection("listings").doc(params.cursor).get();
     if (cursorDoc.exists) q = q.startAfter(cursorDoc);
   }
   const snap = await q.limit(params.limit + 1).get();
-  let items = snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Listing, "id">) }));
-  if (params.type && params.type !== "ALL") items = items.filter((x) => x.type === params.type);
-  if (params.query) items = items.filter((x) => `${x.title} ${x.description}`.toLowerCase().includes(params.query!.toLowerCase()));
-  return { items: items.slice(0, params.limit), nextCursor: snap.size > params.limit ? snap.docs[snap.docs.length - 1].id : null };
+  let items = snap.docs.map((d: any) => ({ id: d.id, ...(d.data() as Omit<Listing, "id">) }));
+  if (params.query) items = items.filter((x: Listing) => `${x.title} ${x.description}`.toLowerCase().includes(params.query!.toLowerCase()));
+  const visibleItems = items.slice(0, params.limit);
+  return {
+    items: visibleItems,
+    nextCursor: snap.size > params.limit && visibleItems.length > 0 ? visibleItems[visibleItems.length - 1]!.id : null,
+  };
 }
 
 export async function getListingById(id: string): Promise<Listing | null> {
