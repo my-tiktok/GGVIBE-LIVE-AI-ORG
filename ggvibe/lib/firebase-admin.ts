@@ -56,6 +56,10 @@ function ensureFirebaseAdminInitialized(): void {
     return;
   }
 
+  if (!canInitializeFirebaseAdmin()) {
+    throw new Error('Firebase Admin SDK cannot be initialized: invalid or missing FIREBASE_SERVICE_ACCOUNT_KEY');
+  }
+
   const serviceAccount = parseServiceAccountFromEnv();
 
   initializeApp({
