@@ -39,7 +39,28 @@ function parseServiceAccountFromEnv(): ServiceAccount {
 }
 
 export function canInitializeFirebaseAdmin(): boolean {
-  return Boolean(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
+  const envKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+  if (!envKey) {
+    return false;
+  }
+
+  // Validate that the credentials can be parsed successfully
+  try {
+    const parsed = JSON.parse(decodeServiceAccountKey(envKey)) as Record<string, string | undefined>;
+    const projectId = parsed.project_id;
+    const clientEmail = parsed.client_email;
+    const privateKey = parsed.private_key;
+
+    if (!projectId || !clientEmail || !privateKey) {
+      console.warn('Firebase Admin credentials are incomplete. Firestore adapter will not be used.');
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.warn('Firebase Admin credentials are malformed. Firestore adapter will not be used.', error);
+    return false;
+  }
 }
 
 function ensureFirebaseAdminInitialized(): void {
