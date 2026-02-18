@@ -67,6 +67,26 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'invalid_request', requestId: meta.requestId }, { status: 400, headers: baseHeaders(meta.requestId) });
   }
 
+  // Check rate limit BEFORE attempting auth operations
+  try {
+    const limit = await getFailedLoginLimit(request, email);
+    if (limit.limited) {
+      return NextResponse.json(
+        { error: 'rate_limited', requestId: meta.requestId },
+        {
+          status: 429,
+          headers: {
+            ...baseHeaders(meta.requestId),
+            'Retry-After': String(limit.retryAfterSeconds ?? 60),
+          },
+        }
+      );
+    }
+  } catch (limiterError) {
+    logError({ type: 'SYSTEM_ERROR', requestId: meta.requestId, method: meta.method, path: meta.path, status: 503, durationMs: Date.now() - startedAt, ip: meta.ip, userAgent: meta.userAgent, error: limiterError });
+    return NextResponse.json({ error: 'service_unavailable', requestId: meta.requestId }, { status: 503, headers: baseHeaders(meta.requestId) });
+  }
+
   try {
     const auth = getFirebaseAdminAuth();
     const decoded = await auth.verifyIdToken(idToken, true);
@@ -83,24 +103,11 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ authenticated: true, uid: decoded.uid, requestId: meta.requestId }, { status: 200, headers: baseHeaders(meta.requestId) });
   } catch (error) {
+    // Record the failed attempt (best effort - don't fail the auth response if limiter fails)
     try {
       await recordFailedLoginAttempt(request, email, { requestId: meta.requestId, path: meta.path });
-      const limit = await getFailedLoginLimit(request, email);
-      if (limit.limited) {
-        return NextResponse.json(
-          { error: 'rate_limited', requestId: meta.requestId },
-          {
-            status: 429,
-            headers: {
-              ...baseHeaders(meta.requestId),
-              'Retry-After': String(limit.retryAfterSeconds ?? 60),
-            },
-          }
-        );
-      }
     } catch (limiterError) {
-      logError({ type: 'SYSTEM_ERROR', requestId: meta.requestId, method: meta.method, path: meta.path, status: 503, durationMs: Date.now() - startedAt, ip: meta.ip, userAgent: meta.userAgent, error: limiterError });
-      return NextResponse.json({ error: 'service_unavailable', requestId: meta.requestId }, { status: 503, headers: baseHeaders(meta.requestId) });
+      logError({ type: 'SYSTEM_ERROR', requestId: meta.requestId, method: meta.method, path: meta.path, status: 500, durationMs: Date.now() - startedAt, ip: meta.ip, userAgent: meta.userAgent, error: limiterError });
     }
 
     logError({
