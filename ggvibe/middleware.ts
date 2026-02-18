@@ -8,8 +8,8 @@ function isProtectedPath(pathname: string): boolean {
 function hasAuthCookie(request: NextRequest): boolean {
   return Boolean(
     request.cookies.get('__session')?.value ||
-      request.cookies.get('__Secure-authjs.session-token')?.value ||
-      request.cookies.get('authjs.session-token')?.value
+      request.cookies.get('__Secure-next-auth.session-token')?.value ||
+      request.cookies.get('next-auth.session-token')?.value
   );
 }
 
