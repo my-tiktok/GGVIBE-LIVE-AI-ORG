@@ -39,7 +39,15 @@ function parseServiceAccountFromEnv(): ServiceAccount {
 }
 
 export function canInitializeFirebaseAdmin(): boolean {
-  return Boolean(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
+  const envKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+  if (!envKey) return false;
+  try {
+    const decoded = decodeServiceAccountKey(envKey);
+    const parsed = JSON.parse(decoded) as Record<string, string | undefined>;
+    return Boolean(parsed.project_id && parsed.client_email && parsed.private_key);
+  } catch {
+    return false;
+  }
 }
 
 function ensureFirebaseAdminInitialized(): void {
