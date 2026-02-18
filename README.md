@@ -1,2 +1,2 @@
 # GGVIBE-LIVE-AI
-Repository for https://replit.com/@gerwinwilliams3/GGVIBE-LIVE-AI
+https://www.ggvibe-chatgpt-ai.org
