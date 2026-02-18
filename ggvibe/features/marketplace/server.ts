@@ -69,7 +69,8 @@ export async function listListings(params: {
   const visibleItems = items.slice(0, params.limit);
   return {
     items: visibleItems,
-    nextCursor: snap.size > params.limit && visibleItems.length > 0 ? visibleItems[visibleItems.length - 1]!.id : null,
+    nextCursor: snap.size > params.limit ? snap.docs[params.limit - 1].id : null,
+  };
   };
 }
 
