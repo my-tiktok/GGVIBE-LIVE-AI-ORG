@@ -1,13 +1,8 @@
-# Production Guardrails (GGVIBE)
+# Production Guardrails
 
-## Invariants (Do Not Break)
-- **No secrets in `NEXT_PUBLIC_*`**: server-only secrets must remain server-side.
-- **Auth required for protected routes**: APIs under `/api/v1` and streaming endpoints require auth.
-- **Replit build/run commands are fixed**:
-  - Build: `cd ggvibe && npm ci --no-audit --no-fund && NODE_OPTIONS="--max-old-space-size=1536" npm run build`
-  - Run: `cd ggvibe && npm run start`
-- **No heavy install hooks**: avoid `preinstall`, `install`, `postinstall`, or `prepare` hooks that run builds or codegen.
-- **Auto-install must stay low-memory**: keep `ggvibe/.npmrc` safeguards intact.
+## Branch Protection Rules for `main`
 
-## Notes
-- If behavior differs between local and Replit, update `replit.md` with the reason.
+- **Require a pull request before merging:** All changes must be made through a pull request.
+- **Require status checks to pass before merging:** All CI checks must pass before a pull request can be merged.
+- **Require branches to be up to date before merging:** This ensures that the branch is up to date with the base branch.
+- **Include administrators:** Enforce all configured restrictions for administrators.
