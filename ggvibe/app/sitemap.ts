@@ -1,5 +1,4 @@
 import { MetadataRoute } from "next";
-import { getAdminFirestore } from "@/lib/firebase-admin";
 
 const BASE_URL = "https://www.ggvibe-chatgpt-ai.org";
 
@@ -17,36 +16,13 @@ const CORE_ROUTES: Array<{
   { path: "/login", changeFrequency: "monthly", priority: 0.4 },
 ];
 
-async function getPublicListingEntries(): Promise<MetadataRoute.Sitemap> {
-  try {
-    const firestore = getAdminFirestore();
-    if (!firestore) return [];
-
-    const snap = await firestore
-      .collection("listings")
-      .where("status", "==", "active")
-      .limit(200)
-      .get();
-
-    return snap.docs.map((doc) => ({
-      url: `${BASE_URL}/marketplace/${doc.id}`,
-      lastModified: new Date(),
-      changeFrequency: "daily" as const,
-      priority: 0.6,
-    }));
-  } catch {
-    return [];
-  }
-}
-
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const core = CORE_ROUTES.map((route) => ({
+  const lastModified = new Date();
+
+  return CORE_ROUTES.map((route) => ({
     url: `${BASE_URL}${route.path}`,
-    lastModified: new Date(),
+    lastModified,
     changeFrequency: route.changeFrequency,
     priority: route.priority,
   }));
-
-  const dynamicListings = await getPublicListingEntries();
-  return [...core, ...dynamicListings];
 }

@@ -64,13 +64,12 @@ export async function listListings(params: {
     if (cursorDoc.exists) q = q.startAfter(cursorDoc);
   }
   const snap = await q.limit(params.limit + 1).get();
-  let items = snap.docs.map((d: any) => ({ id: d.id, ...(d.data() as Omit<Listing, "id">) }));
+  let items = snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Listing, "id">) }));
   if (params.query) items = items.filter((x: Listing) => `${x.title} ${x.description}`.toLowerCase().includes(params.query!.toLowerCase()));
   const visibleItems = items.slice(0, params.limit);
   return {
     items: visibleItems,
     nextCursor: snap.size > params.limit ? snap.docs[params.limit - 1].id : null,
-  };
   };
 }
 
