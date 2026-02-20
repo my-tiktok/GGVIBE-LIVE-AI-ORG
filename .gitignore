@@ -1,13 +1,4 @@
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-*.pem
-*.p12
-serviceAccountKey.json
-secrets/
-**/serviceAccountKey.json
+.env.*
 **/.env*
-firebase-debug.log
-.firebase-debug.log
+!.env.example

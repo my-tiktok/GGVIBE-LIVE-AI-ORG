@@ -1,3 +1,4 @@
+import { validateEnvironment } from "@/lib/env-validator";
 import type { Metadata } from "next";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
@@ -26,6 +27,7 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  validateEnvironment();
   return (
     <html lang="en">
       <body>
