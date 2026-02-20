@@ -13,8 +13,6 @@ function normalizeUid(input?: string | null, email?: string | null) {
 }
 
 export async function getCurrentUser(): Promise<CurrentUser | null> {
-  if (!process.env.NEXTAUTH_SECRET) return null;
-
   let session;
   try {
     session = await getServerSession(buildAuthOptions());

@@ -1,27 +1,28 @@
 import { MetadataRoute } from "next";
 
-const CANONICAL_BASE_URL = "https://www.ggvibe-chatgpt-ai.org";
+const BASE_URL = "https://www.ggvibe-chatgpt-ai.org";
 
-function getBaseUrl() {
-  const configured = process.env.NEXTAUTH_URL;
-  if (!configured) {
-    return CANONICAL_BASE_URL;
-  }
+const CORE_ROUTES: Array<{
+  path: string;
+  changeFrequency: "daily" | "weekly" | "monthly";
+  priority: number;
+}> = [
+  { path: "/", changeFrequency: "daily", priority: 1 },
+  { path: "/privacy", changeFrequency: "monthly", priority: 0.5 },
+  { path: "/terms", changeFrequency: "monthly", priority: 0.5 },
+  { path: "/plans", changeFrequency: "weekly", priority: 0.7 },
+  { path: "/marketplace", changeFrequency: "daily", priority: 0.8 },
+  { path: "/seller", changeFrequency: "weekly", priority: 0.6 },
+  { path: "/login", changeFrequency: "monthly", priority: 0.4 },
+];
 
-  try {
-    return new URL(configured).origin;
-  } catch {
-    return CANONICAL_BASE_URL;
-  }
-}
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const lastModified = new Date();
 
-export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = getBaseUrl();
-
-  return ["", "/privacy", "/terms", "/login"].map((path) => ({
-    url: `${baseUrl}${path}`,
-    lastModified: new Date(),
-    changeFrequency: "weekly" as const,
-    priority: path === "" ? 1 : 0.6,
+  return CORE_ROUTES.map((route) => ({
+    url: `${BASE_URL}${route.path}`,
+    lastModified,
+    changeFrequency: route.changeFrequency,
+    priority: route.priority,
   }));
 }

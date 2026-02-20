@@ -48,6 +48,23 @@ const nextConfig = {
     return config;
   },
 
+
+
+  async redirects() {
+    return [
+      {
+        source: "/:path*",
+        has: [
+          {
+            type: "host",
+            value: "ggvibe-chatgpt-ai.org",
+          },
+        ],
+        destination: "https://www.ggvibe-chatgpt-ai.org/:path*",
+        permanent: true,
+      },
+    ];
+  },
   async headers() {
     return [
       {

@@ -50,7 +50,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "validation_error", issues: parsed.error.flatten() }, { status: 400 });
   }
 
-  const data = await listListings(parsed.data, guard.user!.uid);
+  const data = await listListings({ ...parsed.data, query: parsed.data.q }, guard.user!.uid);
   return NextResponse.json(data, { headers: { "Cache-Control": "no-store" } });
 }
 
