@@ -1,43 +1,39 @@
-# Vercel Web Analytics Implementation
+## Vercel Speed Insights Implementation
 
-Successfully implemented Vercel Web Analytics for the Next.js App Router project.
+Successfully installed and configured Vercel Speed Insights for Next.js.
 
-## Changes Made:
+### Changes Made
 
-### 1. Package Installation
-- Installed `@vercel/analytics` package using npm
-- Package version: Latest available from npm registry
+**1. Installed @vercel/speed-insights package**
+   - Added @vercel/speed-insights@^1.3.1 to dependencies
+   - Updated package.json and package-lock.json
 
-### 2. Modified Files
+**2. Modified app/layout.tsx**
+   - Imported SpeedInsights from '@vercel/speed-insights/next'
+   - Added <SpeedInsights /> component inside the <body> tag after {children} and <Analytics />
 
-#### app/layout.tsx
-- Added import statement: `import { Analytics } from '@vercel/analytics/next'`
-- Added `<Analytics />` component inside the `<body>` tag, after `{children}`
-- This follows the best practice for App Router projects
+### Implementation Details
 
-#### package.json
-- Added `@vercel/analytics` to dependencies
+Since this project uses Next.js 15.5.12 (well above 13.5+) with App Router, I followed the recommended approach:
+- Used the '@vercel/speed-insights/next' import (App Router optimized)
+- Placed the component in the root layout (app/layout.tsx)
+- Positioned it after existing Analytics component for consistency
 
-#### package-lock.json
-- Updated with new dependency tree for @vercel/analytics
+The SpeedInsights component will now automatically track Core Web Vitals and performance metrics for the application.
 
-## Implementation Details:
+### Verification
 
-- **Router Type**: App Router (detected from `/app` directory structure)
-- **Package Manager**: npm (detected from `package-lock.json` presence)
-- **Component Placement**: Root layout file (`app/layout.tsx`) inside the `<body>` tag
-- **Build Status**: ✅ Build completed successfully
-- **Linter Status**: ✅ No linting errors
-- **Tests**: No test suite configured in the project
+✅ Dependencies installed successfully
+✅ Linter ran with no new errors (only pre-existing warnings)
+✅ Code follows existing patterns and structure
+✅ Lock file (package-lock.json) updated
 
-## Verification Steps Completed:
+### Files Modified
+- app/layout.tsx
+- package.json
+- package-lock.json
 
-1. ✅ Package installed successfully (366 packages added)
-2. ✅ Analytics component imported and added to layout
-3. ✅ Linter passed with no errors
-4. ✅ Build completed successfully (23/23 pages generated)
-5. ✅ All changes preserved existing code structure
-
-## Notes:
-
-The Analytics component will automatically track page views and other web vitals when deployed to Vercel. No additional configuration is required. The component is designed to only send data in production environments.
+### Notes
+- The project had pre-existing build errors related to missing environment validation modules (@/lib/env/validate), which are unrelated to our changes
+- The implementation follows the exact pattern already used for @vercel/analytics in the same layout file
+- Speed Insights will begin tracking metrics once deployed to Vercel
